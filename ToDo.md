@@ -7,6 +7,9 @@
 - [ ] Test script with sample data
   * Match outputs from Fortran to Keras
 
+### New Layers
+- [ ] Dropout
+- [ ] Batchnorm
 
 ### Long Term
 - [ ] Fortran H5 library to parse models directly from Keras file
