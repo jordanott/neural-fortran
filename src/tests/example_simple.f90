@@ -1,14 +1,18 @@
 program example_simple
   use mod_network, only: network_type
   implicit none
-  type(network_type) :: net
+  type(network_type) :: net, net2
   real, allocatable :: input(:), output(:)
   integer :: i
   net = network_type([3, 5, 2])
+  ! net2 = network_type([3, 5, 2])
+
+  call net % save('my_simple_net.txt')
+  call net2 % load('my_simple_net.txt')
   input = [0.2, 0.4, 0.6]
   output = [0.123456, 0.246802]
   do i = 1, 500
-    call net % train(input, output, eta=1.0)
-    print *, 'Iteration: ', i, 'Output:', net % output(input)
+    call net2 % train(input, output, eta=1.0)
+    print *, 'Iteration: ', i, 'Output:', net2 % output(input)
   end do
 end program example_simple
