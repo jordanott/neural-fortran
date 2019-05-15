@@ -149,6 +149,9 @@ contains
     do n = 1, size(self % dims) - 1
       read(fileunit, fmt=*) self % layers(n) % w
     end do
+    ! when loading from file the activation function has to be set
+    call self % set_activation('sigmoid')
+
     close(fileunit)
   end subroutine load
 
