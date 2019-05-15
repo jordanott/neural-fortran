@@ -7,8 +7,8 @@ program test_network_save
   net1 = network_type([768, 30, 10])
   net2 = network_type([768, 30, 10])
   print *, 'Save network 1 into file'
-  call net1 % save('test_network.dat')
-  call net2 % load('test_network.dat')
+  call net1 % save('test_network.txt')
+  call net2 % load('test_network.txt')
   print *, 'Load network 2 from file'
   do n = 1, size(net1 % layers)
     print *, 'Layer ', n, ', weights equal: ',&

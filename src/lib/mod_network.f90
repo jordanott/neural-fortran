@@ -56,19 +56,23 @@ contains
     call net % sync(1)
   end function net_constructor
 
-  pure real(rk) function accuracy(self, x, y)
+  real(rk) function accuracy(self, x, y)
     ! Given input x and output y, evaluates the position of the
     ! maximum value of the output and returns the number of matches
     ! relative to the size of the dataset.
     class(network_type), intent(in) :: self
     real(rk), intent(in) :: x(:,:), y(:,:)
     integer(ik) :: i, good
+    write(*,*) 'a'
     good = 0
     do i = 1, size(x, dim=2)
+      write(*,*) 'b'
       if (all(maxloc(self % output(x(:,i))) == maxloc(y(:,i)))) then
+        write(*,*) 'c'
         good = good + 1
       end if
     end do
+    write(*,*) 'd'
     accuracy = real(good) / size(x, dim=2)
   end function accuracy
 
@@ -193,7 +197,7 @@ contains
   pure subroutine set_activation(self, activation)
     ! A thin wrapper around layer % set_activation().
     ! This method can be used to set an activation function
-    ! for all layers at once. 
+    ! for all layers at once.
     class(network_type), intent(in out) :: self
     character(len=*), intent(in) :: activation
     integer :: n
@@ -225,32 +229,39 @@ contains
     type(array2d), allocatable :: dw(:), dw_batch(:)
     integer(ik) :: i, im, n, nm
     integer(ik) :: is, ie, indices(2)
+    write(*,*) '1'
 
     im = size(x, dim=2) ! mini-batch size
     nm = size(self % dims) ! number of layers
-
+    write(*,*) '2'
     ! get start and end index for mini-batch
     indices = tile_indices(im)
     is = indices(1)
     ie = indices(2)
-
+    write(*,*) '3'
     call db_init(db_batch, self % dims)
     call dw_init(dw_batch, self % dims)
-
+    write(*,*) '4'
     do concurrent(i = is:ie)
+      write(*,*) '5'
       call self % fwdprop(x(:,i))
+      write(*,*) '6'
       call self % backprop(y(:,i), dw, db)
+      write(*,*) '7'
       do concurrent(n = 1:nm)
+        write(*,*) '8'
         dw_batch(n) % array =  dw_batch(n) % array + dw(n) % array
+        write(*,*) '9'
         db_batch(n) % array =  db_batch(n) % array + db(n) % array
+        write(*,*) '10'
       end do
     end do
-
+    write(*,*) '12'
     if (num_images() > 1) then
       call dw_co_sum(dw_batch)
       call db_co_sum(db_batch)
     end if
-
+    write(*,*) '13'
     call self % update(dw_batch, db_batch, eta / im)
 
   end subroutine train_batch
