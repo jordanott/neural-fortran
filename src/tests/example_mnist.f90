@@ -24,48 +24,44 @@ program example_mnist
   call load_mnist(tr_images, tr_labels, te_images, te_labels)
 
   ! net = network_type([784, 10, 10])
-  call net % load('../../src/my_net.txt')
-  write(*,*) 'loaded my_net.txt'
-  call net % save('../../src/my_net2.txt')
-  write(*,*) 'attempted saving my_net2.txt'
+  call net % load('../../src/new_keras2.txt')
+  write(*,*) 'loaded new_keras2.txt'
+  ! call net % set_activation('sigmoid')
+  ! call net % save('../../src/my_keras2_net.txt')
+  ! write(*,*) 'attempted saving my_net2.txt'
   batch_size = 1000
   num_epochs = 10
-  write(*,*) 'this_image'
 
   if (this_image() == 1) then
-    ! write(*, '(a,f5.2,a)') 'Initial accuracy: ',&
-    !   net % accuracy(te_images, label_digits(te_labels)) * 100, ' %'
-    write(*,*) 'inside if'
+   write(*, '(a,f5.2,a)') 'Initial accuracy: ',&
+     net % accuracy(te_images, label_digits(te_labels)) * 100, ' %'
   end if
-  write(*,*) 'before do?'
+  print *, '0'
   epochs: do n = 1, num_epochs
-    write(*,*) 'epochs?'
-    mini_batches: do i = 1, size(tr_labels) / batch_size
+   print *, 'epoch: ', n
+   mini_batches: do i = 1, size(tr_labels) / batch_size
 
-      ! pull a random mini-batch from the dataset
-      call random_number(pos)
-      batch_start = int(pos * (size(tr_labels) - batch_size + 1))
-      batch_end = batch_start + batch_size - 1
+     ! pull a random mini-batch from the dataset
+     call random_number(pos)
 
-      ! prepare mini-batch
-      write(*,*) 'tr_labels?'
-      input = tr_images(:,batch_start:batch_end)
-      write(*,*) 'label digits?'
-      output = label_digits(tr_labels(batch_start:batch_end))
+     batch_start = int(pos * (size(tr_labels) - batch_size + 1))
+     batch_end = batch_start + batch_size - 1
 
-      ! train the network on the mini-batch
-      write(*,*) 'train?'
-      call net % train(input, output, eta=3._rk)
-      write(*,*) 'after train?'
+     ! prepare mini-batch
+     input = tr_images(:,batch_start:batch_end)
 
-    end do mini_batches
-    write(*,*) 'after mini batches'
-    if (this_image() == 1) then
-      write(*,*) 'attempting accuracy again'
-      write(*, '(a,i2,a,f5.2,a)') 'Epoch ', n, ' done, Accuracy: ',&
-        net % accuracy(te_images, label_digits(te_labels)) * 100, ' %'
-    end if
+     output = label_digits(tr_labels(batch_start:batch_end))
+
+     ! train the network on the mini-batch
+     call net % train(input, output, eta=3._rk)
+
+   end do mini_batches
+
+   if (this_image() == 1) then
+     write(*, '(a,i2,a,f5.2,a)') 'Epoch ', n, ' done, Accuracy: ',&
+       net % accuracy(te_images, label_digits(te_labels)) * 100, ' %'
+   end if
 
   end do epochs
-  call net % save('../../src/my_net.txt')
-end program example_mnist
+
+  end program example_mnist

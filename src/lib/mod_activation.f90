@@ -14,6 +14,7 @@ module mod_activation
   public :: sigmoid, sigmoid_prime
   public :: step, step_prime
   public :: tanhf, tanh_prime
+  ! public :: linear, linear_prime
 
   interface
     pure function activation_function(x)
@@ -45,6 +46,13 @@ contains
     real(rk) :: res(size(x))
     res = max(0., x)
   end function relu
+
+  ! pure function linear(x) result(res)
+  !   !! Linear activation function.
+  !   real(rk), intent(in) :: x(:)
+  !   real(rk) :: res(size(x))
+  !   res = x
+  ! end function linear
 
   pure function relu_prime(x) result(res)
     ! First derivative of the REctified Linear Unit (RELU) activation function.
@@ -90,8 +98,8 @@ contains
   end function step_prime
 
   pure function tanhf(x) result(res)
-    ! Tangent hyperbolic activation function. 
-    ! Same as the intrinsic tanh, but must be 
+    ! Tangent hyperbolic activation function.
+    ! Same as the intrinsic tanh, but must be
     ! defined here so that we can use procedure
     ! pointer with it.
     real(rk), intent(in) :: x(:)
