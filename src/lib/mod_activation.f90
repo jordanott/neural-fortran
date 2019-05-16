@@ -14,7 +14,7 @@ module mod_activation
   public :: sigmoid, sigmoid_prime
   public :: step, step_prime
   public :: tanhf, tanh_prime
-  ! public :: linear, linear_prime
+  public :: linear, linear_prime
 
   interface
     pure function activation_function(x)
@@ -47,13 +47,6 @@ contains
     res = max(0., x)
   end function relu
 
-  ! pure function linear(x) result(res)
-  !   !! Linear activation function.
-  !   real(rk), intent(in) :: x(:)
-  !   real(rk) :: res(size(x))
-  !   res = x
-  ! end function linear
-
   pure function relu_prime(x) result(res)
     ! First derivative of the REctified Linear Unit (RELU) activation function.
     real(rk), intent(in) :: x(:)
@@ -64,6 +57,20 @@ contains
       res = 0
     end where
   end function relu_prime
+
+  pure function linear(x) result(res)
+    !! Linear activation function.
+    real(rk), intent(in) :: x(:)
+    real(rk) :: res(size(x))
+    res = x
+  end function linear
+
+  pure function linear_prime(x) result(res)
+    !! Linear activation function.
+    real(rk), intent(in) :: x(:)
+    real(rk) :: res(size(x))
+    res = x
+  end function linear_prime
 
   pure function sigmoid(x) result(res)
     ! Sigmoid activation function.
