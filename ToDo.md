@@ -6,6 +6,9 @@
 - [X] Add activation functions from `load`
 - [ ] Test script with sample data
   * Match outputs from Fortran to Keras
+- [ ] New test script
+  * Read inputs from text files
+  * return output from network
 
 ### New Layers
 - [ ] Dropout

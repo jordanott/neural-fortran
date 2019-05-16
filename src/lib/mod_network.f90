@@ -155,11 +155,7 @@ contains
     call self % set_activation('sigmoid')
     do n = 1, size(self % dims) - 1
       read(fileunit, fmt=*) activation_type
-      ! activation_type = trim(activation_type)
-      ! write(*, '(a,a,a,i2)') 'recieved activation "',trim(activation_type),'" for layer ', n
-      ! call self % layers(n) % set_activation(trim(activation_type))
       call self % layers(n) % set_activation(activation_type)
-
     end do
 
 

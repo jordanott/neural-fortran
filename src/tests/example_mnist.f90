@@ -24,8 +24,8 @@ program example_mnist
   call load_mnist(tr_images, tr_labels, te_images, te_labels)
 
   ! net = network_type([784, 10, 10])
-  call net % load('../../src/new_keras2.txt')
-  write(*,*) 'loaded new_keras2.txt'
+  call net % load('../../src/new_keras3.txt')
+  write(*,*) 'loaded new_keras3.txt'
   ! call net % set_activation('sigmoid')
   ! call net % save('../../src/my_keras2_net.txt')
   ! write(*,*) 'attempted saving my_net2.txt'

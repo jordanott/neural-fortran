@@ -71,12 +71,10 @@ def read_h5file(filename, newmodel):
         weights_str="\t".join(list(map(str,weights[x].flatten())))
         newmodel.write(weights_str + "\n")
 
-    # for a in activations:
-        # newmodel.write(a + "\n")
+    for a in activations:
+        newmodel.write(a + "\n")
 
-    newmodel.write('relu' + "\n")
-    newmodel.write('relu' + "\n")
-    newmodel.write('sigmoid' + "\n")
+
 
 print("\n\n\n")
 kerasfile = input("enter .h5 file from keras to convert: ")
