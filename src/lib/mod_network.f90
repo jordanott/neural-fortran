@@ -158,7 +158,7 @@ contains
     ! its working properly. Changing the overall activation function
     ! changes the output, but it shouldn't matter what it starts as
     ! if we set each layer, right?
-    call self % set_activation('gaussian')
+    call self % set_activation('linear')
     print*, size(self % dims) - 1
     do n = 1, size(self % dims) - 1
       read(fileunit, fmt=*) activation_type
