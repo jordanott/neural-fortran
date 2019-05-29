@@ -44,7 +44,7 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
     set(LIBS "${LIBS} blas")
     message(STATUS "Configuring build to use BLAS from ${BLAS}")
   endif()
-    
+
   set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -cpp")
   set(CMAKE_Fortran_FLAGS_DEBUG "-O0 -g -C -fbacktrace")
   set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -ffast-math")
@@ -72,12 +72,12 @@ string(REGEX REPLACE "^ | $" "" LIBS "${LIBS}")
 
 # tests
 enable_testing()
-foreach(execid mnist network_save network_sync set_activation_function)
+foreach(execid mnist network_save network_sync set_activation_function keras H5_RDWT)
   add_executable(test_${execid} src/tests/test_${execid}.f90)
   target_link_libraries(test_${execid} neural ${LIBS})
   add_test(test_${execid} bin/test_${execid})
 endforeach()
-  
+
 foreach(execid mnist simple sine)
   add_executable(example_${execid} src/tests/example_${execid}.f90)
   target_link_libraries(example_${execid} neural ${LIBS})

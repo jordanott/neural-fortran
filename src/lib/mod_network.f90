@@ -136,7 +136,7 @@ contains
     ! Loads the network from file.
     class(network_type), intent(in out) :: self
     character(len=*), intent(in) :: filename
-    character(len=15) :: activation_type
+    character(len=20) :: activation_type
 
     integer(ik) :: fileunit, n, num_layers
     integer(ik), allocatable :: dims(:)
@@ -152,9 +152,17 @@ contains
       read(fileunit, fmt=*) self % layers(n) % w
     end do
     ! when loading from file the activation function has to be set
-    call self % set_activation('sigmoid')
+    ! if only the individual layers are set we get a seg fault
+    ! the entire network needs to be set and then each layer can
+    ! be set individually. That was what I thought but I dont think
+    ! its working properly. Changing the overall activation function
+    ! changes the output, but it shouldn't matter what it starts as
+    ! if we set each layer, right?
+    call self % set_activation('gaussian')
+    print*, size(self % dims) - 1
     do n = 1, size(self % dims) - 1
       read(fileunit, fmt=*) activation_type
+      print*, activation_type
       call self % layers(n) % set_activation(activation_type)
     end do
 

@@ -137,6 +137,9 @@ contains
       case('tanh')
         self % activation => tanhf
         self % activation_prime => tanh_prime
+      case('linear')
+        self % activation => linear
+        self % activation_prime => linear_prime
       case default
         self % activation => sigmoid
         self % activation_prime => sigmoid_prime
