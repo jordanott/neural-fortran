@@ -41,10 +41,12 @@ program test_keras
   open (unit = 1, file = 'testcase.txt')
   write(1,*) tr_images(:,1)
 
+
   ! load trained network from keras
   call net % load('../../src/new_keras10_io.txt')
   print *, 'loaded new_keras10_io.txt'
 
+  ! print *, net % layers(1) %
   ! num_layers=size(net % dims)
   ! print *, 'dims'
   ! print *, net%dims(num_layers)

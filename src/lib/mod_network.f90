@@ -151,23 +151,15 @@ contains
     do n = 1, size(self % dims) - 1
       read(fileunit, fmt=*) self % layers(n) % w
     end do
-    ! when loading from file the activation function has to be set
-    ! if only the individual layers are set we get a seg fault
-    ! the entire network needs to be set and then each layer can
-    ! be set individually. That was what I thought but I dont think
-    ! its working properly. Changing the overall activation function
-    ! changes the output, but it shouldn't matter what it starts as
-    ! if we set each layer, right?
-    call self % set_activation('relu')
-    print*, size(self % dims) - 1
+
+    call self % layers(1) % set_activation('linear')
     do n = 1, size(self % dims) - 1
       read(fileunit, fmt=*) activation_type
       print*, n
       print*, activation_type
 
-      call self % layers(n) % set_activation(activation_type)
+      call self % layers(n+1) % set_activation(activation_type)
     end do
-    call self % layers(4) % set_activation('linear')
 
     close(fileunit)
   end subroutine load
