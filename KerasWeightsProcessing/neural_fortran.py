@@ -62,23 +62,23 @@ def read_h5file(filename, newmodel):
     newmodel.write(str(num_layers) + "\n")
 
     newmodel.write("\t".join(dimensions) + "\n")
-
-    for x in range(3):
-        bias_str="\t".join(list(map(str,bias[x].tolist())))
-        newmodel.write(bias_str + "\n")
-
-    for x in range(3):
-        weights_str="\t".join(list(map(str,weights[x].flatten())))
-        newmodel.write(weights_str + "\n")
-
-    for a in activations:
-        newmodel.write(a + "\n")
+    if bias:
+        for x in range(len(layers)):
+            bias_str="\t".join(list(map(str,bias[x].tolist())))
+            newmodel.write(bias_str + "\n")
+    if weights:
+        for x in range(len(layers)):
+            weights_str="\t".join(list(map(str,weights[x].flatten())))
+            newmodel.write(weights_str + "\n")
+    if activations:
+        for a in activations:
+            newmodel.write(a + "\n")
 
 
 
 print("\n\n\n")
-kerasfile = input("enter .h5 file from keras to convert: ")
-newfile = input("enter name for new textfile: ")
+kerasfile = 'keras10_io.h5' #input("enter .h5 file from keras to convert: ")
+newfile = 'new_keras10_io.txt' #input("enter name for new textfile: ")
 newmodel = open(newfile,"w")
 read_h5file(kerasfile,newmodel)
 

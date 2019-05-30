@@ -16,4 +16,6 @@ program example_simple
     call net2 % train(input, output, eta=1.0)
     print *, 'Iteration: ', i, 'Output:', net2 % output(input)
   end do
+  call net2 % save('my_simple_net.txt')
+
 end program example_simple

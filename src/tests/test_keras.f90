@@ -42,8 +42,8 @@ program test_keras
   write(1,*) tr_images(:,1)
 
   ! load trained network from keras
-  call net % load('../../src/new_keras10.txt')
-  print *, 'loaded new_keras10.txt'
+  call net % load('../../src/new_keras10_io.txt')
+  print *, 'loaded new_keras10_io.txt'
 
   ! num_layers=size(net % dims)
   ! print *, 'dims'

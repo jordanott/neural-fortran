@@ -158,14 +158,16 @@ contains
     ! its working properly. Changing the overall activation function
     ! changes the output, but it shouldn't matter what it starts as
     ! if we set each layer, right?
-    call self % set_activation('linear')
+    call self % set_activation('relu')
     print*, size(self % dims) - 1
     do n = 1, size(self % dims) - 1
       read(fileunit, fmt=*) activation_type
+      print*, n
       print*, activation_type
+
       call self % layers(n) % set_activation(activation_type)
     end do
-
+    call self % layers(4) % set_activation('linear')
 
     close(fileunit)
   end subroutine load
