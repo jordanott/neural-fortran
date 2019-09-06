@@ -2,3 +2,5 @@
 *.mod
 build
 data/mnist/*.dat
+*.h5
+*.pyc
