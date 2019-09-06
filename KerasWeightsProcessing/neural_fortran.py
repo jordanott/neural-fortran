@@ -23,6 +23,8 @@ def read_h5file(filename, newmodel):
     # activation function information in model_config
     model_config = f.attrs['model_config'].decode('utf-8') # Decode using the utf-8 encoding
     model_config = model_config.replace('true','True')
+    model_config = model_config.replace('false','False')
+
     model_config = model_config.replace('null','None')
     model_config = eval(model_config)
 
@@ -34,10 +36,18 @@ def read_h5file(filename, newmodel):
     # number of layers + 1(Fortran includes input layer),
     #   dimensions, biases, weights, and activations
     num_layers = len(layers)+1
+
     dimensions = []
     bias = {}
     weights = {}
     activations = []
+
+    print('Processing the following {} layers: \n{}\n'.format(len(layers),layers))
+    if 'Input' in model_config['config']['layers'][0]['class_name']:
+        model_config = model_config['config']['layers'][1:]
+    else:
+        model_config =
+        model_config['config']['layers']
 
     for num,l in enumerate(layers):
         layer_info_keys=list(f[weights_group_key][l][l].keys())
@@ -49,27 +59,31 @@ def read_h5file(filename, newmodel):
 
             elif "kernel" in key:
                 weights.update({num:np.array(f[weights_group_key][l][l][key])})
-
                 if num == 0:
                     dimensions.append(str(np.array(f[weights_group_key][l][l][key]).shape[0]))
                     dimensions.append(str(np.array(f[weights_group_key][l][l][key]).shape[1]))
                 else:
                     dimensions.append(str(np.array(f[weights_group_key][l][l][key]).shape[1]))
-        # print model_config['config'].keys()
-        activations.append(model_config['config']['layers'][num]['config']['activation'])
+        print(model_config)
 
 
-    newmodel.write(str(num_layers) + "\n")
+        if 'Dense' in model_config[num]['class_name']:
+            activations.append(model_config[num]['config']['activation'])
+        else:
+            print('Skipping bad layer: \'{}\'\n'.format(model_config[num]['class_name']))
 
-    newmodel.write("\t".join(dimensions) + "\n")
+
+    newmodel.write(str(num_layers) + '\n')
+
+    newmodel.write("\t".join(dimensions) + '\n')
     if bias:
         for x in range(len(layers)):
             bias_str="\t".join(list(map(str,bias[x].tolist())))
-            newmodel.write(bias_str + "\n")
+            newmodel.write(bias_str + '\n')
     if weights:
         for x in range(len(layers)):
             weights_str="\t".join(list(map(str,weights[x].T.flatten())))
-            newmodel.write(weights_str + "\n")
+            newmodel.write(weights_str + '\n')
     if activations:
         for a in activations:
             newmodel.write(a + "\n")
@@ -77,8 +91,8 @@ def read_h5file(filename, newmodel):
 
 
 # print("\n\n\n")
-kerasfile = 'keras10_io.h5' #input("enter .h5 file from keras to convert: ")
-newfile = 'new_keras10_io.txt' #input("enter name for new textfile: ")
+kerasfile = 'mnist_example_no_input.h5' #input("enter .h5 file from keras to convert: ")
+newfile = 'mnist_example_no_input.txt' #input("enter name for new textfile: ")
 newmodel = open(newfile,"w")
 read_h5file(kerasfile,newmodel)
 
