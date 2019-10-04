@@ -31,6 +31,13 @@ else()
   add_definitions(-DREAL32)
 endif()
 
+if(SERIAL)
+  message(STATUS "Configuring build for serial execution")
+else()
+  message(STATUS "Configuring build for parallel execution")
+  add_definitions(-DCAF)
+endif()
+
 # compiler flags for gfortran
 if(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
 
@@ -44,7 +51,7 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
     set(LIBS "${LIBS} blas")
     message(STATUS "Configuring build to use BLAS from ${BLAS}")
   endif()
-
+    
   set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -cpp")
   set(CMAKE_Fortran_FLAGS_DEBUG "-O0 -g -C -fbacktrace")
   set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -ffast-math")
@@ -52,9 +59,15 @@ endif()
 
 # compiler flags for ifort
 if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
-  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -coarray=shared -fpp -assume byterecl,realloc_lhs -heap-arrays")
+
+  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fpp -assume byterecl,realloc_lhs -heap-arrays")
   set(CMAKE_Fortran_FLAGS_DEBUG "-O0 -g -C -traceback")
   set(CMAKE_Fortran_FLAGS_RELEASE "-O3")
+
+  if(NOT SERIAL)
+    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -coarray=shared")
+  endif()
+
 endif()
 
 # compiler flags for Cray ftn
@@ -65,21 +78,21 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES Cray)
 endif()
 
 # library to archive (libneural.a)
-add_library(neural src/lib/mod_activation.f90 src/lib/mod_io.f90 src/lib/mod_kinds.f90 src/lib/mod_layer.f90 src/lib/mod_mnist.f90 src/lib/mod_network.f90 src/lib/mod_parallel.f90 src/lib/mod_random.f90)
+add_library(neural src/lib/mod_activation.F90 src/lib/mod_io.F90 src/lib/mod_kinds.F90 src/lib/mod_layer.F90 src/lib/mod_mnist.F90 src/lib/mod_network.F90 src/lib/mod_parallel.F90 src/lib/mod_random.F90)
 
 # Remove leading or trailing whitespace
 string(REGEX REPLACE "^ | $" "" LIBS "${LIBS}")
 
 # tests
-enable_testing()
-foreach(execid mnist network_save network_sync set_activation_function keras H5_RDWT)
-  add_executable(test_${execid} src/tests/test_${execid}.f90)
-  target_link_libraries(test_${execid} neural ${LIBS})
-  add_test(test_${execid} bin/test_${execid})
-endforeach()
-
-foreach(execid mnist simple sine)
-  add_executable(example_${execid} src/tests/example_${execid}.f90)
-  target_link_libraries(example_${execid} neural ${LIBS})
-  add_test(example_${execid} bin/example_${execid})
-endforeach()
+#enable_testing()
+#foreach(execid mnist network_save network_sync set_activation_function)
+#  add_executable(test_${execid} src/tests/test_${execid}.F90)
+#  target_link_libraries(test_${execid} neural ${LIBS})
+#  add_test(test_${execid} bin/test_${execid})
+#endforeach()
+  
+#foreach(execid mnist save_and_load simple sine)
+#  add_executable(example_${execid} src/tests/example_${execid}.F90)
+#  target_link_libraries(example_${execid} neural ${LIBS})
+#  add_test(example_${execid} bin/example_${execid})
+#endforeach()

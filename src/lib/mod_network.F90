@@ -171,7 +171,7 @@ contains
     loss = 0.5 * sum((y - self % output(x))**2) / size(x)
   end function loss
 
-  pure function fwdoutput(self, x) result(a)
+  pure function output(self, x) result(a)
     ! Use forward propagation to compute the output of the network.
     class(network_type), intent(in) :: self
     real(rk), intent(in) :: x(:)
@@ -183,7 +183,7 @@ contains
         a = self % layers(n) % activation(matmul(transpose(layers(n-1) % w), a) + layers(n) % b)
       end do
     end associate
-  end function fwdoutput
+  end function output
 
   subroutine save(self, filename)
     ! Saves the network to a file.
@@ -222,8 +222,10 @@ contains
     integer(ik) :: n
     if (num_images() == 1) return
     layers: do n = 1, size(self % dims)
+#ifdef CAF
       call co_broadcast(self % layers(n) % b, image)
       call co_broadcast(self % layers(n) % w, image)
+#endif
     end do layers
   end subroutine sync
 

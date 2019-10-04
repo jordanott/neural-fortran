@@ -8,11 +8,11 @@ module mod_kinds
   public :: ik, rk
 
 #ifdef REAL64
-  integer,parameter :: rk = real64
+  integer,parameter :: rk = selected_real_kind(12) !real64
 #elif REAL128
-  integer,parameter :: rk = real128
+  integer,parameter :: rk = selected_real_kind(12) !real128
 #else
-  integer,parameter :: rk = real32
+  integer,parameter :: rk = selected_real_kind(12) !real32
 #endif
 
 #ifdef INT64
