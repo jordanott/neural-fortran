@@ -132,6 +132,9 @@ contains
       case('relu')
         self % activation => relu
         self % activation_prime => relu_prime
+      case('leakyrelu')
+        self % activation => leaky_relu
+        self % activation_prime => leaky_relu_prime
       case('sigmoid')
         self % activation => sigmoid
         self % activation_prime => sigmoid_prime
