@@ -15,6 +15,7 @@ module mod_activation
   public :: step, step_prime
   public :: tanhf, tanh_prime
   public :: linear, linear_prime
+  public :: leaky_relu, leaky_relu_prime
 
   interface
     pure function activation_function(x)
@@ -39,6 +40,24 @@ contains
     real(rk) :: res(size(x))
     res = -2 * x * gaussian(x)
   end function gaussian_prime
+
+  pure function leaky_relu(x) result(res)
+    !! REctified Linear Unit (RELU) activation function.
+    real(rk), intent(in) :: x(:)
+    real(rk) :: res(size(x))
+    res = max(0.3 * x, x)
+  end function leaky_relu
+
+  pure function leaky_relu_prime(x) result(res)
+    ! First derivative of the REctified Linear Unit (RELU) activation function.
+    real(rk), intent(in) :: x(:)
+    real(rk) :: res(size(x))
+    where (0.3 * x > 0)
+      res = 1
+    elsewhere
+      res = 0
+    end where
+  end function leaky_relu_prime
 
   pure function relu(x) result(res)
     !! REctified Linear Unit (RELU) activation function.
