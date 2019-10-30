@@ -56,11 +56,11 @@ contains
     call net % sync(1)
   end function net_constructor
 
-  pure real(rk) function accuracy(self, x, y)
+  real(rk) function accuracy(self, x, y)
     ! Given input x and output y, evaluates the position of the
     ! maximum value of the output and returns the number of matches
     ! relative to the size of the dataset.
-    class(network_type), intent(in) :: self
+    class(network_type), intent(in out) :: self
     real(rk), intent(in) :: x(:,:), y(:,:)
     integer(ik) :: i, good
     good = 0
@@ -102,17 +102,22 @@ contains
 
   end subroutine backprop
 
-  pure subroutine fwdprop(self, x)
+  pure subroutine fwdprop(self, input)
     ! Performs the forward propagation and stores arguments to activation
     ! functions and activations themselves for use in backprop.
     class(network_type), intent(in out) :: self
-    real(rk), intent(in) :: x(:)
+    real(rk), intent(in) :: input(:)
+    real(rk), allocatable :: a(:), x(:)
+
     integer(ik) :: n
+    x = input
     associate(layers => self % layers)
-      layers(1) % a = x
-      do n = 2, size(layers)
-        layers(n) % z = matmul(transpose(layers(n-1) % w), layers(n-1) % a) + layers(n) % b
-        layers(n) % a = self % layers(n) % activation(layers(n) % z)
+      ! layers(1) % a = x
+      do n = 1, size(layers)
+        ! call layers(n) % forward(x, a)
+
+        ! layers(n) % z = matmul(transpose(layers(n-1) % w), layers(n-1) % a) + layers(n) % b
+        ! layers(n) % a = self % layers(n) % activation(layers(n) % z)
       end do
     end associate
   end subroutine fwdprop
@@ -137,52 +142,64 @@ contains
     class(network_type), intent(in out) :: self
     character(len=*), intent(in) :: filename
     character(len=20) :: activation_type
-
     integer(ik) :: fileunit, n, num_layers
     integer(ik), allocatable :: dims(:)
+
     open(newunit=fileunit, file=filename, status='old', action='read')
+    ! number of layers in network
     read(fileunit, fmt=*) num_layers
     allocate(dims(num_layers))
+
+    ! dimensions of layers
     read(fileunit, fmt=*) dims
     call self % init(dims)
+
+    ! input layer doesn't have biases
     do n = 2, size(self % dims)
       read(fileunit, fmt=*) self % layers(n) % b
     end do
+    ! read weights into layers
     do n = 1, size(self % dims) - 1
       read(fileunit, fmt=*) self % layers(n) % w
     end do
 
+    ! input layer "activation" is just linear
     call self % layers(1) % set_activation('linear')
-    do n = 1, size(self % dims) - 1
-      read(fileunit, fmt=*) activation_type
-      print*, n
-      print*, activation_type
 
-      call self % layers(n+1) % set_activation(activation_type)
+    do n = 2, size(self % dims)
+      read(fileunit, fmt=*) activation_type
+
+      call self % layers(n) % set_activation(activation_type)
     end do
 
     close(fileunit)
   end subroutine load
 
-  pure real(rk) function loss(self, x, y)
+  real(rk) function loss(self, x, y)
     ! Given input x and expected output y, returns the loss of the network.
-    class(network_type), intent(in) :: self
+    class(network_type), intent(in out) :: self
     real(rk), intent(in) :: x(:), y(:)
     loss = 0.5 * sum((y - self % output(x))**2) / size(x)
   end function loss
 
-  pure function output(self, x) result(a)
+  function output(self, input) result(a)
     ! Use forward propagation to compute the output of the network.
-    class(network_type), intent(in) :: self
-    real(rk), intent(in) :: x(:)
+    class(network_type), intent(in out) :: self
+    real(rk), intent(in) :: input(:)
     real(rk), allocatable :: a(:)
     integer(ik) :: n
-    associate(layers => self % layers)
-      a = self % layers(2) % activation(matmul(transpose(layers(1) % w), x) + layers(2) % b)
-      do n = 3, size(layers)
-        a = self % layers(n) % activation(matmul(transpose(layers(n-1) % w), a) + layers(n) % b)
-      end do
-    end associate
+
+    ! associate(layers => self % layers)
+    ! a = self % layers(2) % activation(matmul(transpose(layers(1) % w), x) + layers(2) % b)
+    call self % layers(1) % forward(input)
+
+    do n = 2, size(self % layers) - 1
+      call self % layers(n) % forward(self % layers(n-1) % o)
+      ! a = self % layers(n) % activation(matmul(transpose(layers(n-1) % w), a) + layers(n) % b)
+    end do
+
+    a = self % layers(size(self % layers) - 1) % o
+    ! end associate
   end function output
 
   subroutine save(self, filename)

@@ -9,17 +9,18 @@ module mod_layer
   implicit none
 
   private
-  public :: array1d, array2d, db_init, db_co_sum, dw_init, dw_co_sum, layer_type
+  public :: array1d, array2d, db_init, db_co_sum, dw_init, dw_co_sum, layer_type, forward
 
   type :: layer_type
     real(rk), allocatable :: a(:) ! activations
     real(rk), allocatable :: b(:) ! biases
+    real(rk), allocatable :: o(:) ! output
     real(rk), allocatable :: w(:,:) ! weights
     real(rk), allocatable :: z(:) ! arg. to activation function
     procedure(activation_function), pointer, nopass :: activation => null()
     procedure(activation_function), pointer, nopass :: activation_prime => null()
   contains
-    procedure, public, pass(self) :: set_activation
+    procedure, public, pass(self) :: set_activation, forward
   end type layer_type
 
   type :: array1d
@@ -50,11 +51,14 @@ contains
     ! the weights.
     integer(ik), intent(in) :: this_size, next_size
     allocate(layer % a(this_size))
+    allocate(layer % b(this_size))
+    allocate(layer % o(next_size))
     allocate(layer % z(this_size))
+
     layer % a = 0
     layer % z = 0
     layer % w = randn(this_size, next_size) / this_size
-    layer % b = randn(this_size)
+    layer % b = 0 ! randn(this_size)
   end function constructor
 
   pure type(array1d) function array1d_constructor(length) result(a)
@@ -118,6 +122,17 @@ contains
 #endif
     end do
   end subroutine dw_co_sum
+
+  subroutine forward(self, x)
+
+    class(layer_type), intent(in out) :: self
+    real(rk), intent(in) :: x(:)
+
+    self % z = x + self % b
+    self % a = self % activation(self % z)
+
+    self % o = matmul(transpose(self % w), self % a)
+  end subroutine forward
 
   pure subroutine set_activation(self, activation)
     ! Sets the activation function. Input string must match one of
