@@ -1,25 +1,42 @@
-# neural-fortran
+# Keras integration with Neural Fortran
+
+
+
+This library is derived from [Milan Curcic's](https://github.com/jordanott/neural-fortran) original work  
+I've beefed up the generalizability of this library
+
+## My Additions
+* An extendable layer type
+  * The original library was only capable of a dense layer
+    * forward and backward operations occurred outside the layer
+  * Ability to implement arbitrary layers
+    * Specify forward and backward pass
+* Implemented layers
+  * Dense
+  * Dropout
+  * Batch Normalization (in progress)
+* Load Keras weights into neural-fortran
+
+---
+## neural-fortran
 
 [![Build Status](https://travis-ci.org/modern-fortran/neural-fortran.svg?branch=master)](https://travis-ci.org/modern-fortran/neural-fortran)
-[![GitHub issues](https://img.shields.io/github/issues/modern-fortran/neural-fortran.svg)](https://github.com/modern-fortran/neural-fortran/issues)
+[![GitHub issues](https://img.shields.io/github/issues/modern-fortran/neural-fortran.svg)](https://github.com/jordanott/neural-fortran/issues)
 
-A parallel neural net microframework. 
-Read the paper [here](https://arxiv.org/abs/1902.06714).
-
-* [Features](https://github.com/modern-fortran/neural-fortran#features)
-* [Getting started](https://github.com/modern-fortran/neural-fortran#getting-started)
-  - [Building in serial mode](https://github.com/modern-fortran/neural-fortran#building-in-serial-mode)
-  - [Building in parallel mode](https://github.com/modern-fortran/neural-fortran#building-in-parallel-mode)
-  - [Building with a different compiler](https://github.com/modern-fortran/neural-fortran#building-with-a-different-compiler)
-  - [Building with BLAS or MKL](https://github.com/modern-fortran/neural-fortran#building-with-blas-or-mkl)
-  - [Building in double or quad precision](https://github.com/modern-fortran/neural-fortran#building-in-double-or-quad-precision)
-  - [Building in debug mode](https://github.com/modern-fortran/neural-fortran#building-in-debug-mode)
-* [Examples](https://github.com/modern-fortran/neural-fortran#examples)
-  - [Creating a network](https://github.com/modern-fortran/neural-fortran#creating-a-network)
-  - [Training the network](https://github.com/modern-fortran/neural-fortran#training-the-network)
-  - [Saving and loading from file](https://github.com/modern-fortran/neural-fortran#saving-and-loading-from-file)
-  - [MNIST training example](https://github.com/modern-fortran/neural-fortran#mnist-training-example)
- * [Contributing](https://github.com/modern-fortran/neural-fortran#contributing)
+* [Features](https://github.com/jordanott/neural-fortran#features)
+* [Getting started](https://github.com/jordanott/neural-fortran#getting-started)
+  - [Building in serial mode](https://github.com/jordanott/neural-fortran#building-in-serial-mode)
+  - [Building in parallel mode](https://github.com/jordanott/neural-fortran#building-in-parallel-mode)
+  - [Building with a different compiler](https://github.com/jordanott/neural-fortran#building-with-a-different-compiler)
+  - [Building with BLAS or MKL](https://github.com/jordanott/neural-fortran#building-with-blas-or-mkl)
+  - [Building in double or quad precision](https://github.com/jordanott/neural-fortran#building-in-double-or-quad-precision)
+  - [Building in debug mode](https://github.com/jordanott/neural-fortran#building-in-debug-mode)
+* [Examples](https://github.com/jordanott/neural-fortran#examples)
+  - [Creating a network](https://github.com/jordanott/neural-fortran#creating-a-network)
+  - [Training the network](https://github.com/jordanott/neural-fortran#training-the-network)
+  - [Saving and loading from file](https://github.com/jordanott/neural-fortran#saving-and-loading-from-file)
+  - [MNIST training example](https://github.com/jordanott/neural-fortran#mnist-training-example)
+ * [Contributing](https://github.com/jordanott/neural-fortran#contributing)
 
 ## Features
 
@@ -34,7 +51,7 @@ Read the paper [here](https://arxiv.org/abs/1902.06714).
 Get the code:
 
 ```
-git clone https://github.com/modern-fortran/neural-fortran
+git clone https://github.com/jordanott/neural-fortran
 ```
 
 Dependencies:
@@ -156,7 +173,7 @@ call net % layers(3) % set_activation('relu')
 
 Available activation function options are: `gaussian`, `relu`, `sigmoid`,
 `step`, and `tanh`.
-See [mod_activation.f90](https://github.com/modern-fortran/neural-fortran/blob/master/src/lib/mod_activation.f90)
+See [mod_activation.f90](https://github.com/jordanott/neural-fortran/blob/master/src/lib/mod_activation.f90)
 for specifics.
 
 ### Training the network
@@ -333,4 +350,4 @@ use in production. Contributions are welcome, especially for:
 * Adding more examples
 * Others?
 
-You can start at the list of open [issues](https://github.com/modern-fortran/neural-fortran/issues).
+You can start at the list of open [issues](https://github.com/jordanott/neural-fortran/issues).
