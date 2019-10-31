@@ -39,12 +39,10 @@ contains
     character(len=*), intent(in) :: activation
     real(rk), intent(in) :: alpha
 
-    allocate(layer % a(this_size))
-    allocate(layer % b(this_size))
+    allocate(layer % b(next_size))
     allocate(layer % o(next_size))
-    allocate(layer % z(this_size))
+    allocate(layer % z(next_size))
 
-    layer % a = 0
     layer % z = 0
     layer % w = randn(this_size, next_size) / this_size
     layer % b = 0 ! randn(this_size)
@@ -91,10 +89,9 @@ contains
     class(Dense), intent(in out) :: self
     real(rk), intent(in) :: x(:)
 
-    self % z = x + self % b
-    self % a = self % activation(self % z)
+    self % z = matmul(transpose(self % w), x) + self % b
+    self % o = self % activation(self % z)
 
-    self % o = matmul(transpose(self % w), self % a)
   end subroutine dense_forward
 
 
