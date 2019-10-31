@@ -5,15 +5,17 @@ module mod_kinds
   implicit none
 
   private
-  public :: ik, rk
+  public :: ik, rk, fk
 
 #ifdef REAL64
-  integer,parameter :: rk = selected_real_kind(12) !real64
+  integer,parameter :: rk = real64
 #elif REAL128
-  integer,parameter :: rk = selected_real_kind(12) !real128
+  integer,parameter :: rk = real128
 #else
-  integer,parameter :: rk = selected_real_kind(12) !real32
+  integer,parameter :: rk = real32
 #endif
+
+integer,parameter :: fk = selected_real_kind(12)
 
 #ifdef INT64
   integer, parameter :: ik = int64
