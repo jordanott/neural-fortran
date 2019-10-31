@@ -78,7 +78,7 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES Cray)
 endif()
 
 # library to archive (libneural.a)
-add_library(neural src/lib/mod_activation.F90 src/lib/mod_io.F90 src/lib/mod_kinds.F90 src/lib/mod_layer.F90 src/lib/mod_dense_layer.F90 src/lib/mod_dropout_layer.F90 src/lib/mod_mnist.F90 src/lib/mod_network.F90 src/lib/mod_parallel.F90 src/lib/mod_random.F90)
+add_library(neural src/lib/mod_activation.F90 src/lib/mod_io.F90 src/lib/mod_kinds.F90 src/lib/mod_layer.F90 src/lib/mod_dense_layer.F90 src/lib/mod_dropout_layer.F90 src/lib/mod_batchnorm_layer.F90 src/lib/mod_mnist.F90 src/lib/mod_network.F90 src/lib/mod_parallel.F90 src/lib/mod_random.F90)
 
 # Remove leading or trailing whitespace
 string(REGEX REPLACE "^ | $" "" LIBS "${LIBS}")

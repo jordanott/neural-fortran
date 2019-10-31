@@ -143,7 +143,7 @@ contains
       select case(trim(layer_names(n)))
         case('input')
           dense_idx = dense_idx + 1
-          unique_layers = unique_layers + 1
+          ! unique_layers = unique_layers + 1
           ! store the dimensions of the weights
           dense_dims(dense_idx) = layer_info(n)
         case('dense')
@@ -153,7 +153,7 @@ contains
           dense_dims(dense_idx) = layer_info(n)
         case('dropout')
           unique_layers = unique_layers + 1
-        case('batchnorm')
+        case('batchnormalization')
           unique_layers = unique_layers + 1
       end select
     end do
@@ -165,17 +165,10 @@ contains
     unique_layers = 0
 
     do n = 1, size(layer_names)
-      ! self % layers(n) = layer_type(dims(n), dims(n+1))
       select case(trim(layer_names(n)))
         case('input')
+          ! dimension of input is first dimension of first dense layer
           dense_idx = dense_idx + 1
-          unique_layers = unique_layers + 1
-
-          allocate(&
-            self % layers(unique_layers) % p,&
-            source=Dense(dense_dims(dense_idx), dense_dims(dense_idx + 1),&       ! shape of dense layer
-              'linear', 0.0)&                                                     ! input layer always has linear activation
-          )
         case('dense')
           dense_idx = dense_idx + 1
           unique_layers = unique_layers + 1
@@ -183,27 +176,28 @@ contains
           allocate(&
             self % layers(unique_layers) % p,&
             source=Dense(&
-              dense_dims(dense_idx), dense_dims(dense_idx + 1),&                  ! shape of dense layer
-              layer_names(n + 1), layer_info(n + 1))&                                     ! activation function args
+              dense_dims(dense_idx - 1), dense_dims(dense_idx),&                  ! shape of dense layer
+              layer_names(n + 1), layer_info(n + 1))&                             ! activation function args
           )
         case('dropout')
           unique_layers = unique_layers + 1
 
           allocate(&
             self % layers(unique_layers) % p,&
-            source=Dropout(dense_dims(dense_idx), layer_info(n))&
+            source=Dropout(dense_dims(dense_idx), layer_info(n))&                 ! layer dim & drop probability
           )
-        case('batchnorm')
+        case('batchnormalization')
           unique_layers = unique_layers + 1
 
-          ! allocate(&
-          !   self % layers(unique_layers) % p,&
-          !   source=BatchNorm(dense_dims(dense_idx), layer_info(n))&
-          ! )
+          allocate(&
+            self % layers(unique_layers) % p,&
+            source=BatchNorm(dense_dims(dense_idx))&                              ! layer dim
+          )
       end select
 
     end do
 
+    ! store info as part of network
     self % layer_info = layer_info
     self % layer_names = layer_names
     self % num_dense_layers = dense_idx
@@ -212,12 +206,11 @@ contains
 
   subroutine load(self, filename)
     ! Loads the network from file.
-    class(network_type), intent(in out) :: self
-    character(len=*), intent(in) :: filename
-    ! character(len=20) :: activation_type
     integer(ik) :: fileunit, n, num_layers
-    character(len=100), allocatable :: layer_names(:)
     real(rk), allocatable :: layer_info(:)
+    character(len=*), intent(in) :: filename
+    class(network_type), intent(in out) :: self
+    character(len=100), allocatable :: layer_names(:)
 
     open(newunit=fileunit, file=filename, status='old', action='read')
 
@@ -236,20 +229,30 @@ contains
     ! initialize the network
     call self % init(layer_names, layer_info)
 
-    ! Read in weights and biases
-    ! input layer doesn't have biases
-    do n = 2, size(self % layers)
+    ! read biases into dense layer
+    do n = 1, size(self % layers)
       select type (layer => self % layers(n) % p)
         class is (Dense)
           read(fileunit, fmt=*) self % layers(n) % p % b
       end select
     end do
 
-    ! read weights into layers
-    do n = 1, size(self % layers) - 1
+    ! read weights into dense layer
+    do n = 1, size(self % layers)
       select type (layer => self % layers(n) % p)
         class is (Dense)
           read(fileunit, fmt=*) self % layers(n) % p % w
+      end select
+    end do
+
+    ! read batchnorm params into layer
+    do n = 1, size(self % layers)
+      select type (layer => self % layers(n) % p)
+        class is (BatchNorm)
+          read(fileunit, fmt=*) self % layers(n) % p % beta
+          read(fileunit, fmt=*) self % layers(n) % p % gama
+          read(fileunit, fmt=*) self % layers(n) % p % mean
+          read(fileunit, fmt=*) self % layers(n) % p % variance
       end select
     end do
 
@@ -276,12 +279,12 @@ contains
       call layers(1) % p % forward(input)
 
       ! iterate through layers passing activation forward
-      do n = 2, size(layers) - 1
+      do n = 2, size(layers)
         call layers(n) % p % forward(layers(n-1) % p % o)
       end do
 
       ! get activation from last layer
-      a = layers(size(layers) - 1) % p % o
+      a = layers(size(layers)) % p % o
     end associate
 
   end function output
@@ -318,21 +321,21 @@ contains
       end select
     end do
 
+    do n = 1, size(self % layers) - 1
+      select type (layer => self % layers(n) % p)
+        class is (BatchNorm)
+          ! write params of batchnorm layer
+          write(fileunit, fmt=*) self % layers(n) % p % beta
+          write(fileunit, fmt=*) self % layers(n) % p % gama
+          write(fileunit, fmt=*) self % layers(n) % p % mean
+          write(fileunit, fmt=*) self % layers(n) % p % variance
+      end select
+    end do
+
     close(fileunit)
 
   end subroutine save
 
-  ! pure subroutine set_activation(self, activation)
-  !   ! A thin wrapper around layer % set_activation().
-  !   ! This method can be used to set an activation function
-  !   ! for all layers at once.
-  !   class(network_type), intent(in out) :: self
-  !   character(len=*), intent(in) :: activation
-  !   integer :: n
-  !   do concurrent(n = 1:size(self % layers))
-  !     call self % layers(n) % p % set_activation(activation)
-  !   end do
-  ! end subroutine set_activation
 
   subroutine sync(self, image)
     ! Broadcasts network weights and biases from

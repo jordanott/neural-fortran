@@ -6,15 +6,15 @@ module mod_batchnorm_layer
   implicit none
 
   ! BatchNorm layer - extends from base layer_type
-  !   Implements the dropout algorithm
+  !   Implements batch normalization
   type, extends(layer_type) :: BatchNorm
-    ! probability of dropping a node
-    real(rk) :: drop_prob
+    ! epsilon parameter
+    real(rk) :: epsilon
 
   contains
 
-    procedure, public, pass(self) :: forward => dense_forward
-    procedure, public, pass(self) :: backward => dense_backward
+    procedure, public, pass(self) :: forward => batchnorm_forward
+    procedure, public, pass(self) :: backward => batchnorm_backward
 
   end type BatchNorm
 
@@ -24,46 +24,49 @@ module mod_batchnorm_layer
 
 contains
 
-  type(BatchNorm) function constructor(this_size, drop_prob) result(layer)
+  type(BatchNorm) function constructor(this_size) result(layer)
     ! BatchNorm class constructor
     !   this_size: size to allocate for current layer
-    !   drop_prob: probability of dropping a node
 
     integer(ik), intent(in) :: this_size
-    real(rk), intent(in) :: drop_prob
-    allocate(layer % o(this_size))
 
-    ! store layer drop probability
-    layer % drop_prob = drop_prob
+    allocate(layer % o(this_size))
+    allocate(layer % beta(this_size))
+    allocate(layer % gama(this_size))
+    allocate(layer % mean(this_size))
+    allocate(layer % variance(this_size))
+
     ! not in training mode
     layer % training = .FALSE.
 
-    ! print *, 'Creating dropout layer', this_size, drop_prob
+    ! epsilon default to 0.001
+    layer % epsilon = 0.001
+
   end function constructor
 
 
-  subroutine dense_forward(self, x)
+  subroutine batchnorm_forward(self, x)
 
     class(BatchNorm), intent(in out) :: self
     real(rk), intent(in) :: x(:)
 
     if (self % training) then
       ! TODO:
-      self % o = x * self % drop_prob
-    else
-      ! NOT TRAINING: pass output forward
       self % o = x
+    else
+      ! NOT TRAINING: standardize using learned values
+      self % o = ((x - self % mean) / sqrt(self % variance + self % epsilon)) * self % gama + self % beta
     end if
 
-  end subroutine dense_forward
+  end subroutine batchnorm_forward
 
 
-  subroutine dense_backward(self, x)
+  subroutine batchnorm_backward(self, x)
 
     class(BatchNorm), intent(in out) :: self
     real(rk), intent(in) :: x(:)
 
     ! TODO: implement backward pass
-  end subroutine dense_backward
+  end subroutine batchnorm_backward
 
 end module mod_batchnorm_layer

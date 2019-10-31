@@ -5,14 +5,46 @@ import argparse
 import numpy as np
 
 ACTIVATIONS = ['relu', 'linear', 'leakyrelu']
-SUPPORTED_LAYERS = ['dense', 'dropout'] + ACTIVATIONS
+SUPPORTED_LAYERS = ['dense', 'dropout', 'batchnormalization'] + ACTIVATIONS
+
+def txt_to_h5(weights_file_name, output_file_name=''):
+    '''
+    Convert a txt file to Keras h5 file
+
+    REQUIRED:
+        weights_file_name (str): path to a txt file used by neural fortran
+    OPTIONAL:
+        output_file_name  (str): desired output path for the produced h5 file
+    '''
+
+    # TODO:
+    # parse txt file following convention in
+    #       https://github.com/jordanott/neural-fortran/blob/development/KerasWeightsProcessing/README.md
+    # create keras model with each of desired layers
+    # manually load:
+    #       - weights
+    #       - biases
+    #       - batchnorm params
+    #           - see order of those params in README
+    #
+
+    pass
 
 def h5_to_txt(weights_file_name, output_file_name=''):
+    '''
+    Convert a Keras h5 file to a txt file
 
-    info_str    = '{name}\t{info}\n'
-    bias        = []
-    weights     = []
-    layer_info  = []
+    REQUIRED:
+        weights_file_name (str): path to a Keras h5 file
+    OPTIONAL:
+        output_file_name  (str): desired path for the produced txt file
+    '''
+
+    info_str         = '{name}\t{info}\n'                       # to store in layer info; config of network
+    bias             = []                                       # dense layer
+    weights          = []                                       # dense layer
+    layer_info       = []                                       # all layers
+    batchnorm_params = []                                       # batchnormalization layers
 
     #check and open file
     with h5py.File(weights_file_name,'r') as weights_file:
@@ -47,12 +79,9 @@ def h5_to_txt(weights_file_name, output_file_name=''):
             name = layer['config']['name']
             class_name = layer['class_name'].lower()
 
-            print class_name
-
             if class_name not in SUPPORTED_LAYERS:
                 warnings.warn('Unsupported layer found! Skipping...')
                 continue
-
             elif class_name == 'dense':
                 # get weights and biases out of dictionary
                 layer_bias    = np.array(
@@ -87,6 +116,23 @@ def h5_to_txt(weights_file_name, output_file_name=''):
                         info = 0
                     )
                 )
+            elif class_name == 'batchnormalization':
+                # get beta, gamma, moving_mean, moving_variance from dictionary
+                for key in sorted(model_weights[name][name].keys()):
+                    # store batchnorm params
+                    batchnorm_params.append(
+                        np.array(
+                            model_weights[name][name][key]
+                        )
+                    )
+
+                # store batchnorm layer info
+                layer_info.append(
+                    info_str.format(
+                        name = class_name,
+                        info = 0
+                    )
+                )
 
             elif class_name == 'dropout':
                 layer_info.append(
@@ -97,7 +143,6 @@ def h5_to_txt(weights_file_name, output_file_name=''):
                 )
 
             elif class_name in ACTIVATIONS:
-                print layer_info[-1]
                 # replace previous dense layer with the advanced activation function (LeakyReLU)
                 layer_info[-1] = info_str.format(
                     name = class_name,
@@ -127,15 +172,29 @@ def h5_to_txt(weights_file_name, output_file_name=''):
             )
             output_file.write(weights_str + '\n')
 
+        for b in batchnorm_params:
+            param_str = '\t'.join(
+                '{:0.6e}'.format(num) for num in b.tolist()
+            )
+            output_file.write(param_str + '\n')
+
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--weights_file", default='examples/mnist_example_input_layer.h5', type=str)
+    parser.add_argument("--weights_file", type=str, help='path to desired file to be processed')
     parser.add_argument('--output_file', default='', type=str)
     args =  parser.parse_args()
 
-    h5_to_txt(
-        weights_file_name=args.weights_file,
-        output_file_name=args.output_file
-    )
+    if args.weights_file.endswith('.h5'):
+        h5_to_txt(
+            weights_file_name=args.weights_file,
+            output_file_name=args.output_file
+        )
+    elif args.weights_file.endswith('.txt'):
+        txt_to_h5(
+            weights_file_name=args.weights_file,
+            output_file_name=args.output_file
+        )
+    else:
+        warnings.warn('Unsupported file extension')

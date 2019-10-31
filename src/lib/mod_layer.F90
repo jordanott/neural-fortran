@@ -11,12 +11,14 @@ module mod_layer
   type :: layer_type
 
     logical :: training             ! is the network in training mode
-    real(rk), allocatable :: a(:)   ! activations
     real(rk), allocatable :: b(:)   ! biases
     real(rk), allocatable :: o(:)   ! output
     real(rk), allocatable :: w(:,:) ! weights
     real(rk), allocatable :: z(:)   ! arg. to activation function
-
+    real(rk), allocatable :: beta(:)
+    real(rk), allocatable :: gama(:)
+    real(rk), allocatable :: mean(:)
+    real(rk), allocatable :: variance(:)
   contains
 
     ! all layers must implement a forward and backward subroutine
