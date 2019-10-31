@@ -16,6 +16,7 @@ from keras.models import Sequential, Model
 from keras.layers import Dense, Input, LeakyReLU, Dropout, BatchNormalization
 
 parser = argparse.ArgumentParser()
+parser.add_argument('--train', action='store_true')
 parser.add_argument('--batchnorm', action='store_true')
 parser.add_argument('--dropout', default=0.0, type=float)
 parser.add_argument('--num_dense_layers', default=5, type=int)
@@ -83,14 +84,23 @@ else:
 # compile model
 model.compile(loss='mse', optimizer='sgd')
 
-# print model.summary()
-
 example_input = np.array(
     [[1,2,3,4,5]]
 )
 
+if args.train:
+    example_target = np.array(
+        [[1,2]]
+    )
+
+    model.fit(
+        example_input,example_target,
+        epochs=5
+    )
+
 keras_predictions = model.predict(example_input)[0]
 
+# save the weights
 model.save(weights_file)
 
 # convert h5 file to txt
@@ -103,6 +113,7 @@ cmd = ['../../build/bin/./test_keras', weights_file.replace('.h5', '.txt')]
 
 print('Keras predictions:', keras_predictions)
 
+# run
 result = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
 fortran_predictions = np.array(
     map(float, result.strip().split()),
