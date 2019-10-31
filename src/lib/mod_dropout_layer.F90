@@ -38,7 +38,6 @@ contains
     ! not in training mode
     layer % training = .FALSE.
 
-    ! print *, 'Creating dropout layer', this_size, drop_prob
   end function constructor
 
 
