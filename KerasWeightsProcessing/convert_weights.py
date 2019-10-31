@@ -5,15 +5,14 @@ import argparse
 import numpy as np
 
 ACTIVATIONS = ['relu', 'linear', 'leakyrelu']
-SUPPORTED_LAYERS = ['Dense', 'Dropout'] + ACTIVATIONS
+SUPPORTED_LAYERS = ['dense', 'dropout'] + ACTIVATIONS
 
 def h5_to_txt(weights_file_name, output_file_name=''):
 
+    info_str    = '{name}\t{info}\n'
     bias        = []
     weights     = []
-    dimensions  = []
-    activations = []
-    layer_types = []
+    layer_info  = []
 
     #check and open file
     with h5py.File(weights_file_name,'r') as weights_file:
@@ -30,25 +29,31 @@ def h5_to_txt(weights_file_name, output_file_name=''):
         # convert to dictionary
         model_config = eval(model_config)
 
-        num_layers = len(model_config['config']['layers'])
+        # store first dimension for the input layer
+        layer_info.append(
+            info_str.format(
+                name = 'input',
+                info = model_config['config']['layers'][0]['config']['batch_input_shape'][1]
+            )
+        )
 
         # check what type of keras model sequential or functional
         if model_config['class_name'] == 'Model':
             layer_config = model_config['config']['layers'][1:]
         else:
             layer_config = model_config['config']['layers']
-            num_layers += 1 # sequential model doesn't include an input layer
 
         for idx,layer in enumerate(layer_config):
             name = layer['config']['name']
-            class_name = layer['class_name']
-            layer_types.append(class_name)
+            class_name = layer['class_name'].lower()
+
+            print class_name
 
             if class_name not in SUPPORTED_LAYERS:
                 warnings.warn('Unsupported layer found! Skipping...')
                 continue
 
-            elif class_name == 'Dense':
+            elif class_name == 'dense':
                 # get weights and biases out of dictionary
                 layer_bias    = np.array(
                     model_weights[name][name]['bias:0']
@@ -62,39 +67,53 @@ def h5_to_txt(weights_file_name, output_file_name=''):
                 # store weight value
                 weights.append(layer_weights)
 
-                # store first dimension for the input layer
-                if idx == 0:
-                    dimensions.append(
-                        str(layer_weights.shape[0])
-                    )
-                # store dimension of hidden dim
-                dimensions.append(
-                    str(layer_weights.shape[1])
-                )
-
                 activation = layer['config']['activation']
 
                 if activation not in ACTIVATIONS:
                     warnings.warn('Unsupported activation found! Replacing with Linear.')
-                    activations.append('linear')
-                else:
-                    activations.append(activation)
+                    activation = 'linear'
 
-            elif class_name == 'Dropout':
-                pass
+                # store dimension of hidden dim
+                layer_info.append(
+                    info_str.format(
+                        name = class_name,
+                        info = layer_weights.shape[1]
+                    )
+                )
+                # add information about the activation
+                layer_info.append(
+                    info_str.format(
+                        name = activation,
+                        info = 0
+                    )
+                )
 
-            elif class_name.lower() in ACTIVATIONS:
+            elif class_name == 'dropout':
+                layer_info.append(
+                    info_str.format(
+                        name = class_name,
+                        info = layer['config']['rate']
+                    )
+                )
+
+            elif class_name in ACTIVATIONS:
+                print layer_info[-1]
                 # replace previous dense layer with the advanced activation function (LeakyReLU)
-                activations[-1] = class_name.lower() + '\t' + str(layer['config']['alpha'])
+                layer_info[-1] = info_str.format(
+                    name = class_name,
+                    info = layer['config']['alpha']
+                )
 
     if not output_file_name:
         # if not specified will use path of weights_file with txt extension
         output_file_name = weights_file_name.replace('.h5', '.txt')
 
     with open(output_file_name,"w") as output_file:
-        output_file.write(str(num_layers) + '\n')
+        output_file.write(str(len(layer_info)) + '\n')
 
-        output_file.write("\t".join(dimensions) + '\n')
+        output_file.write(
+            ''.join(layer_info)
+        )
 
         for b in bias:
             bias_str = '\t'.join(
@@ -108,8 +127,6 @@ def h5_to_txt(weights_file_name, output_file_name=''):
             )
             output_file.write(weights_str + '\n')
 
-        for a in activations:
-            output_file.write(a + "\n")
 
 if __name__ == '__main__':
 

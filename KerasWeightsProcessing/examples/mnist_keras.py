@@ -1,6 +1,6 @@
 import sys
 sys.path.append('../')
-from neural_fortran import h5_to_txt
+from convert_weights import h5_to_txt
 
 import keras
 from keras.datasets import mnist
