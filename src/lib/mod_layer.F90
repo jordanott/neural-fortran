@@ -1,26 +1,29 @@
 module mod_layer
 
-  ! Defines the layer type and its methods.
-
-  use mod_activation
   use mod_kinds, only: ik, rk
-  use mod_random, only: randn
+  use mod_activation
 
   implicit none
 
-  private
-  public :: array1d, array2d, db_init, db_co_sum, dw_init, dw_co_sum, layer_type, forward
+  public :: array1d, array2d, db_init, db_co_sum, dw_init, dw_co_sum
 
+  ! define layer type to be extended
   type :: layer_type
-    real(rk), allocatable :: a(:) ! activations
-    real(rk), allocatable :: b(:) ! biases
-    real(rk), allocatable :: o(:) ! output
+
+    logical :: training             ! is the network in training mode
+    real(rk), allocatable :: a(:)   ! activations
+    real(rk), allocatable :: b(:)   ! biases
+    real(rk), allocatable :: o(:)   ! output
     real(rk), allocatable :: w(:,:) ! weights
-    real(rk), allocatable :: z(:) ! arg. to activation function
-    procedure(activation_function), pointer, nopass :: activation => null()
-    procedure(activation_function), pointer, nopass :: activation_prime => null()
+    real(rk), allocatable :: z(:)   ! arg. to activation function
+
   contains
-    procedure, public, pass(self) :: set_activation, forward
+
+    ! all layers must implement a forward and backward subroutine
+    ! custom layers will follow this same structure
+    procedure, public, pass(self) :: forward => layer_forward
+    procedure, public, pass(self) :: backward => layer_backward
+
   end type layer_type
 
   type :: array1d
@@ -30,10 +33,6 @@ module mod_layer
   type :: array2d
     real(rk), allocatable :: array(:,:)
   end type array2d
-
-  interface layer_type
-    module procedure :: constructor
-  end interface layer_type
 
   interface array1d
     module procedure :: array1d_constructor
@@ -45,21 +44,23 @@ module mod_layer
 
 contains
 
-  type(layer_type) function constructor(this_size, next_size) result(layer)
-    ! Layer class constructor. this_size is the number of neurons in the layer.
-    ! next_size is the number of neurons in the next layer, used to allocate
-    ! the weights.
-    integer(ik), intent(in) :: this_size, next_size
-    allocate(layer % a(this_size))
-    allocate(layer % b(this_size))
-    allocate(layer % o(next_size))
-    allocate(layer % z(this_size))
+  subroutine layer_forward(self, x)
 
-    layer % a = 0
-    layer % z = 0
-    layer % w = randn(this_size, next_size) / this_size
-    layer % b = 0 ! randn(this_size)
-  end function constructor
+    class(layer_type), intent(in out) :: self
+    real(rk), intent(in) :: x(:)
+
+    ! Do stuff for forward pass
+  end subroutine layer_forward
+
+
+  subroutine layer_backward(self, x)
+
+    class(layer_type), intent(in out) :: self
+    real(rk), intent(in) :: x(:)
+
+    ! Do stuff for backward pass
+  end subroutine layer_backward
+
 
   pure type(array1d) function array1d_constructor(length) result(a)
     ! Overloads the default type constructor.
@@ -68,12 +69,14 @@ contains
     a % array = 0
   end function array1d_constructor
 
+
   pure type(array2d) function array2d_constructor(dims) result(a)
     ! Overloads the default type constructor.
     integer, intent(in) :: dims(2)
     allocate(a % array(dims(1), dims(2)))
     a % array = 0
   end function array2d_constructor
+
 
   pure subroutine db_init(db, dims)
     ! Initialises biases structure.
@@ -88,6 +91,7 @@ contains
     db(n) = array1d(dims(n))
   end subroutine db_init
 
+
   pure subroutine dw_init(dw, dims)
     ! Initialises weights structure.
     type(array2d), allocatable, intent(in out) :: dw(:)
@@ -101,6 +105,7 @@ contains
     dw(n) = array2d([dims(n), 1])
   end subroutine dw_init
 
+
   subroutine db_co_sum(db)
     ! Performs a collective sum of bias tendencies.
     type(array1d), allocatable, intent(in out) :: db(:)
@@ -112,6 +117,7 @@ contains
     end do
   end subroutine db_co_sum
 
+
   subroutine dw_co_sum(dw)
     ! Performs a collective sum of weights tendencies.
     type(array2d), allocatable, intent(in out) :: dw(:)
@@ -122,50 +128,5 @@ contains
 #endif
     end do
   end subroutine dw_co_sum
-
-  subroutine forward(self, x)
-
-    class(layer_type), intent(in out) :: self
-    real(rk), intent(in) :: x(:)
-
-    self % z = x + self % b
-    self % a = self % activation(self % z)
-
-    self % o = matmul(transpose(self % w), self % a)
-  end subroutine forward
-
-  pure subroutine set_activation(self, activation)
-    ! Sets the activation function. Input string must match one of
-    ! provided activation functions, otherwise it defaults to sigmoid.
-    ! If activation not present, defaults to sigmoid.
-    class(layer_type), intent(in out) :: self
-    character(len=*), intent(in) :: activation
-    select case(trim(activation))
-      case('gaussian')
-        self % activation => gaussian
-        self % activation_prime => gaussian_prime
-      case('relu')
-        self % activation => relu
-        self % activation_prime => relu_prime
-      case('leakyrelu')
-        self % activation => leaky_relu
-        self % activation_prime => leaky_relu_prime
-      case('sigmoid')
-        self % activation => sigmoid
-        self % activation_prime => sigmoid_prime
-      case('step')
-        self % activation => step
-        self % activation_prime => step_prime
-      case('tanh')
-        self % activation => tanhf
-        self % activation_prime => tanh_prime
-      case('linear')
-        self % activation => linear
-        self % activation_prime => linear_prime
-      case default
-        self % activation => sigmoid
-        self % activation_prime => sigmoid_prime
-    end select
-  end subroutine set_activation
 
 end module mod_layer

@@ -2,7 +2,7 @@ rm -rf build
 mkdir build
 cd build
 
-#FC=gfortran cmake .. -DSERIAL=1
+# FC=gfortran cmake .. -DSERIAL=1
 FC=mpif90 cmake .. -DSERIAL=1
 
 make
