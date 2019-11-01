@@ -59,14 +59,13 @@ def txt_to_h5(weights_file_name, output_file_name=''):
 
             if layer_type in SUPPORTED_LAYERS:
                 param = line[1]
-
                 if layer_type == 'input':
                     input = Input(shape=(int(param),), name = "input")
                     x     = input
 
                 elif layer_type == 'dense':
                     bias_count += 1; weights_count += 1
-                    x = Dense(int(param))(x)
+                    x = Dense(int(param),name = "dense_{}".format(weights_count))(x)
 
                 elif layer_type == 'dropout':
                     x = Dropout(float(param))(x)
@@ -79,7 +78,7 @@ def txt_to_h5(weights_file_name, output_file_name=''):
 
                 elif layer_type == 'batchnormalization':
                     batchnorm_count+=4
-                    x = BatchNormalization()(x)
+                    x = BatchNormalization(name = 'batch_normalization_{}'.format(batchnorm_count))(x)
 
                 elif layer_type == 'linear':
                     x = Activation('linear')(x)
@@ -103,18 +102,18 @@ def txt_to_h5(weights_file_name, output_file_name=''):
     # create model
     model = Model(inputs=input, outputs=x)
 
-    sgd = optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
 
     # compile model
-    model.compile(loss='mean_squared_error',
-                  optimizer=sgd,
+    model.compile(loss='mse',
+                  optimizer='sgd',
                   metrics=['accuracy'])
+
 
     # set weights and biases
     for idx, w in enumerate(weights):
         name    = 'dense_{}'.format(idx+1)
         layer   = model.get_layer(name)
-        w       = w.reshape(layer.input_shape[1], layer.output_shape[1])
+        w       = w.reshape(layer.output_shape[1],layer.input_shape[1]).T
         layer.set_weights( [w, bias[idx]] )
 
     # set batchnorm parameters
@@ -125,7 +124,6 @@ def txt_to_h5(weights_file_name, output_file_name=''):
         layer.set_weights( params )
 
     # view summary
-    print(model.summary())
 
     if not output_file_name:
         # if not specified will use path of weights_file with h5 extension
@@ -267,19 +265,19 @@ def h5_to_txt(weights_file_name, output_file_name=''):
 
         for b in bias:
             bias_str = '\t'.join(
-                '{:0.6e}'.format(num) for num in b.tolist()
+                '{:0.7e}'.format(num) for num in b.tolist()
             )
             output_file.write(bias_str + '\n')
 
         for w in weights:
             weights_str = '\t'.join(
-                '{:0.6e}'.format(num) for num in w.T.flatten()
+                '{:0.7e}'.format(num) for num in w.T.flatten()
             )
             output_file.write(weights_str + '\n')
 
         for b in batchnorm_params:
             param_str = '\t'.join(
-                '{:0.6e}'.format(num) for num in b.tolist()
+                '{:0.7e}'.format(num) for num in b.tolist()
             )
             output_file.write(param_str + '\n')
 

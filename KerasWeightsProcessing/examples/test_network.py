@@ -2,10 +2,12 @@ import keras
 import argparse
 import numpy as np
 import subprocess
+import os
 
 import sys
 sys.path.append('../')
 from convert_weights import h5_to_txt
+from convert_weights import txt_to_h5
 
 # set random seeds for reproducibility
 np.random.seed(123)
@@ -14,6 +16,7 @@ tf.set_random_seed(123)
 
 from keras.models import Sequential, Model
 from keras.layers import Dense, Input, LeakyReLU, Dropout, BatchNormalization
+from keras.models import load_model
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--train', action='store_true')
@@ -102,16 +105,24 @@ keras_predictions = model.predict(example_input)[0]
 
 # save the weights
 model.save(weights_file)
-
 # convert h5 file to txt
 h5_to_txt(
     weights_file_name=weights_file,
     output_file_name=None
 )
+txt_to_h5(
+    weights_file_name=weights_file.replace('.h5','.txt'),
+    output_file_name=None
+)
 
 cmd = ['../../build/bin/./test_keras', weights_file.replace('.h5', '.txt')]
 
-print('Keras predictions:', keras_predictions)
+print('Keras predictions:      ', keras_predictions)
+
+if os.path.exists(weights_file.replace('.h5','_converted.h5')):
+    model2 = load_model(weights_file.replace('.h5','_converted.h5'))
+    keras_predictions2 = model2.predict(example_input)[0]
+    print('Other Keras predictions:', keras_predictions2)
 
 # run
 result = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
@@ -119,7 +130,7 @@ fortran_predictions = np.array(
     [float(num) for num in result.strip().split()],
     dtype=np.float32
 )
-print('Fortran predictions:', fortran_predictions)
+print('Fortran predictions:    ', fortran_predictions)
 
 # keras predictions must match neural fortran predictions
-assert np.allclose(keras_predictions, fortran_predictions)
+assert np.allclose(keras_predictions, keras_predictions2,fortran_predictions)
