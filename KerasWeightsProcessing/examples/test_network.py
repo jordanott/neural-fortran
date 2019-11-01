@@ -116,7 +116,7 @@ print('Keras predictions:', keras_predictions)
 # run
 result = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
 fortran_predictions = np.array(
-    map(float, result.strip().split()),
+    [float(num) for num in result.strip().split()],
     dtype=np.float32
 )
 print('Fortran predictions:', fortran_predictions)

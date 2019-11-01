@@ -4,8 +4,17 @@ import warnings
 import argparse
 import numpy as np
 
+import numpy as np
+import math
+import keras
+from keras.models import Sequential, Model
+from keras.layers import Dense, Dropout, BatchNormalization
+from keras.layers import Input, Activation
+from keras import optimizers
+
+INPUT = ['input']
 ACTIVATIONS = ['relu', 'linear', 'leakyrelu']
-SUPPORTED_LAYERS = ['dense', 'dropout', 'batchnormalization'] + ACTIVATIONS
+SUPPORTED_LAYERS = ['dense', 'dropout', 'batchnormalization'] + ACTIVATIONS + INPUT
 
 def txt_to_h5(weights_file_name, output_file_name=''):
     '''
@@ -28,7 +37,103 @@ def txt_to_h5(weights_file_name, output_file_name=''):
     #           - see order of those params in README
     #
 
-    pass
+    bias             = []                                       # dense layer
+    weights          = []                                       # dense layer
+    batchnorm_params = []                                       # batchnormalization layers
+
+    bias_count       = 0
+    weights_count    = 0
+    batchnorm_count  = 0
+
+    with open(weights_file_name, mode='r') as weights_file:
+        lines = weights_file.readlines()
+
+        for idx, line in enumerate(lines):
+
+            if idx == 0:
+                num_layers = int(line)
+                continue
+
+            line = line.strip().split("\t")
+            layer_type = line[0]
+
+            if layer_type in SUPPORTED_LAYERS:
+                param = line[1]
+
+                if layer_type == 'input':
+                    input = Input(shape=(int(param),), name = "input")
+                    x     = input
+
+                elif layer_type == 'dense':
+                    bias_count += 1; weights_count += 1
+                    x = Dense(int(param))(x)
+
+                elif layer_type == 'dropout':
+                    x = Dropout(float(param))(x)
+
+                elif layer_type == 'relu':
+                    x = Activation('relu')(x)
+
+                elif layer_type == 'relu':
+                    x = Activation('relu',alpha=float(param))(x)
+
+                elif layer_type == 'batchnormalization':
+                    batchnorm_count+=4
+                    x = BatchNormalization()(x)
+
+                elif layer_type == 'linear':
+                    x = Activation('linear')(x)
+
+            elif not layer_type.isalpha():
+                # found bias or weights numbers
+                w = np.asarray([float(num) for num in line])
+
+                if bias_count > 0:
+                    bias_count -= 1
+                    bias.append(w)
+
+                elif weights_count > 0:
+                    weights_count -= 1
+                    weights.append(w)
+
+                elif batchnorm_count > 0:
+                    batchnorm_count -= 1
+                    batchnorm_params.append(w)
+
+    # create model
+    model = Model(inputs=input, outputs=x)
+
+    sgd = optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
+
+    # compile model
+    model.compile(loss='mean_squared_error',
+                  optimizer=sgd,
+                  metrics=['accuracy'])
+
+    # set weights and biases
+    for idx, w in enumerate(weights):
+        name    = 'dense_{}'.format(idx+1)
+        layer   = model.get_layer(name)
+        w       = w.reshape(layer.input_shape[1], layer.output_shape[1])
+        layer.set_weights( [w, bias[idx]] )
+
+    # set batchnorm parameters
+    for idx in range(0,len(batchnorm_params),4):
+        params  = batchnorm_params[idx:idx+4]
+        name    = 'batch_normalization_{}'.format(idx // 4 + 1)
+        layer   = model.get_layer(name)
+        layer.set_weights( params )
+
+    # view summary
+    print(model.summary())
+
+    if not output_file_name:
+        # if not specified will use path of weights_file with h5 extension
+        output_file_name = weights_file_name.replace('.txt', '_converted.h5')
+
+    model.save(output_file_name)
+
+
 
 def h5_to_txt(weights_file_name, output_file_name=''):
     '''
@@ -196,5 +301,6 @@ if __name__ == '__main__':
             weights_file_name=args.weights_file,
             output_file_name=args.output_file
         )
+
     else:
         warnings.warn('Unsupported file extension')
