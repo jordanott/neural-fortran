@@ -10,6 +10,9 @@ module mod_dense_layer
   ! Dense layer - extends from base layer_type
   !   Implements matrix multiplication and an activation function
   type, extends(layer_type) :: Dense
+    ! activation function parameter
+    real(rk) :: alpha
+
     ! activation function and derivative of that function
     procedure(activation_function), pointer, nopass :: activation => null()
     procedure(activation_function), pointer, nopass :: activation_prime => null()
@@ -43,6 +46,7 @@ contains
     allocate(layer % o(next_size))
     allocate(layer % z(next_size))
 
+    layer % alpha = alpha
     layer % z = 0
     layer % w = randn(this_size, next_size) / this_size
     layer % b = 0 ! randn(this_size)
@@ -90,7 +94,7 @@ contains
     real(rk), intent(in) :: x(:)
 
     self % z = matmul(transpose(self % w), x) + self % b
-    self % o = self % activation(self % z)
+    self % o = self % activation(self % z, self % alpha)
 
   end subroutine dense_forward
 
