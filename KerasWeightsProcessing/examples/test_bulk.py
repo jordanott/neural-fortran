@@ -29,7 +29,7 @@ for file_name in os.listdir(args.model_dir):
 
     # set appropriate paths
     model_path  = args.model_dir + file_name
-    output_path = 'output_weights/'+file_name.replace('.h5', '.txt')
+    output_path = args.model_dir+file_name.replace('.h5', '.txt')
 
     print('Model path:', model_path)
     print('Output path:', output_path)
