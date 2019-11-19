@@ -4,3 +4,4 @@ build
 data/mnist/*.dat
 *.h5
 *.pyc
+.DS_Store
