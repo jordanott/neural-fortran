@@ -20,7 +20,7 @@ module mod_network
   type :: network_type
     type(layer_container), allocatable :: layers(:)
     ! type(layer_type), allocatable :: layers(:)
-    integer(ik) :: num_dense_layers
+    integer(ik) :: num_dense_layers, input_size, output_size
     real(rk), allocatable :: layer_info(:)
     character(len=100), allocatable :: layer_names(:)
 
@@ -143,7 +143,8 @@ contains
       select case(trim(layer_names(n)))
         case('input')
           dense_idx = dense_idx + 1
-          ! unique_layers = unique_layers + 1
+          ! input size
+          self % input_size = layer_info(n)
           ! store the dimensions of the weights
           dense_dims(dense_idx) = layer_info(n)
         case('dense')
@@ -151,6 +152,8 @@ contains
           unique_layers = unique_layers + 1
           ! store the dimensions of the weights
           dense_dims(dense_idx) = layer_info(n)
+          ! output size
+          self % output_size = layer_info(n)
         case('dropout')
           unique_layers = unique_layers + 1
         case('batchnormalization')
