@@ -1,5 +1,6 @@
 module mod_ensemble
 
+  use omp_lib
   use mod_kinds, only: ik, rk
   use mod_random, only: randn
   use mod_network
@@ -32,7 +33,7 @@ contains
   type(ensemble_type) function ensemble_constructor(directory) result(ensemble)
     ! creates a network for every config txt in the directory
     real :: r
-    integer :: i,n,reason
+    integer :: i,n,reason, idx
     character(len=*), intent(in) :: directory
     character(LEN=100), dimension(:), allocatable :: model_file_names
     type(network_type) :: net
@@ -49,28 +50,30 @@ contains
       ensemble % num_members = ensemble % num_members + 1
     end do
 
+    ensemble % num_of_each = int(128 / ensemble % num_members)
+    ensemble % total_members = ensemble % num_members * ensemble % num_of_each
+
     ! allocate how many members in the ensemble
-    allocate(ensemble % ensemble_members(ensemble % num_members))
-    allocate(model_file_names(ensemble % num_members))
+    allocate(ensemble % ensemble_members(ensemble % total_members))
+    allocate(model_file_names(ensemble % total_members))
     rewind(31)
 
     do i = 1,ensemble % num_members
       read(31,'(a)') model_file_names(i)
       ! print *, trim(directory)//trim(model_file_names(i))
       ! construct model using the config file
-      call net % load(trim(directory)//trim(model_file_names(i)))
+      do n = 1, ensemble % num_of_each
+        idx = (i - 1) * ensemble % num_of_each + n
+        call net % load(trim(directory)//trim(model_file_names(i)))
 
-      allocate(&
-        ensemble % ensemble_members(i) % p,&
-        source=net&
-      )
-
+        allocate(&
+          ensemble % ensemble_members(idx) % p,&
+          source=net&
+        )
+      end do
     end do
 
     close(31)
-
-    ensemble % num_of_each = int(128 / ensemble % num_members)
-    ensemble % total_members = ensemble % num_members * ensemble % num_of_each
 
   end function ensemble_constructor
 
@@ -79,28 +82,38 @@ contains
     ! Use forward propagation to compute the output of the network.
     class(ensemble_type), intent(in out) :: self
     real(rk), intent(in) :: input(:)
-    real(rk), allocatable :: output(:)
-    integer(ik) :: i,j, output_size, input_size
+    real(rk), allocatable :: storage(:,:), model_output(:), output(:)
+    integer(ik) :: i,j,idx, output_size, input_size
 
     ! getting output size from model
     input_size  = self % ensemble_members(1) % p % input_size
     output_size = self % ensemble_members(1) % p % output_size
+    ! allocate a space for each model to write in
+    allocate(storage(output_size, self % total_members))
     allocate(output(output_size))
+    allocate(model_output(output_size))
 
-    associate(members => self % ensemble_members)
-      do i=1, self % num_members
-        do j=1, self % num_of_each
-          ! output from model - noise added to input
-          output = output + members(i) % p % output(&
-            input + randn(input_size)* 0.01&
-          )
-        end do
+    !$OMP PARALLEL DO PRIVATE(i,j)
+    do i=1, self % total_members
+      ! just to check we're using multiple threads
+      ! print *, OMP_GET_THREAD_NUM()
+
+      ! output from model - noise added to input
+      model_output = self % ensemble_members(i) % p % output(&
+        randn(input_size)* 0.01&
+      )
+
+      ! write model output into shared memory
+      do j=1, output_size
+        storage(j, i) = model_output(j)
       end do
-    end associate
+
+    end do
+    !$OMP END PARALLEL DO
+
     ! average over all model predictions
-    output = output / self % total_members
+    output = sum(storage, DIM=2) / self % total_members
 
   end function average
-
 
 end module mod_ensemble

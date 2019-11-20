@@ -43,7 +43,7 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
 
   if(SERIAL)
     message(STATUS "Configuring to build with -fcoarray=single")
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fcoarray=single")
+    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fcoarray=single -fopenmp")
   endif()
 
   if(BLAS)
