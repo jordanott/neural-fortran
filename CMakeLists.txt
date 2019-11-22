@@ -43,7 +43,7 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
 
   if(SERIAL)
     message(STATUS "Configuring to build with -fcoarray=single")
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fcoarray=single -fopenmp")
+    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fcoarray=single")
   endif()
 
   if(BLAS)
@@ -52,7 +52,7 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
     message(STATUS "Configuring build to use BLAS from ${BLAS}")
   endif()
 
-  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -cpp")
+  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -cpp -fopenmp")
   set(CMAKE_Fortran_FLAGS_DEBUG "-O0 -g -C -fbacktrace")
   set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -ffast-math")
 endif()
@@ -60,7 +60,7 @@ endif()
 # compiler flags for ifort
 if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
 
-  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fpp -assume byterecl,realloc_lhs -heap-arrays")
+  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fpp -assume byterecl,realloc_lhs -heap-arrays -qopenmp")
   set(CMAKE_Fortran_FLAGS_DEBUG "-O0 -g -C -traceback")
   set(CMAKE_Fortran_FLAGS_RELEASE "-O3")
 
