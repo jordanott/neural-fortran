@@ -40,8 +40,11 @@ contains
     ! First derivative of the Gaussian activation function.
     real(rk), intent(in) :: x(:)
     real(rk), intent(in) :: alpha
+    real(rk) :: tmp_alpha
     real(rk) :: res(size(x))
-    res = -2 * x * gaussian(x, 0.0)
+
+    tmp_alpha = 0.0
+    res = -2 * x * gaussian(x, tmp_alpha)
   end function gaussian_prime
 
   pure function leaky_relu(x, alpha) result(res)
@@ -112,8 +115,11 @@ contains
     ! First derivative of the sigmoid activation function.
     real(rk), intent(in) :: x(:)
     real(rk), intent(in) :: alpha
+    real(rk) ::	tmp_alpha
     real(rk) :: res(size(x))
-    res = sigmoid(x,0.0) * (1 - sigmoid(x,0.0))
+
+    tmp_alpha = 0.0
+    res = sigmoid(x, tmp_alpha) * (1 - sigmoid(x, tmp_alpha))
   end function sigmoid_prime
 
   pure function step(x, alpha) result(res)
