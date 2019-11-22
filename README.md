@@ -20,6 +20,7 @@ I've beefed up the generalizability and added many features
 * Ensembles
   * Read in a directory of network configs
   * Create a network for each config
+  * Run in parallel using `$OMP PARALLEL` directives 
   * Average results of all predictions in ensemble
 * A bridge between Keras and Fortran
   * Convert model trained in Keras (`h5` file) to Neural Fortran
