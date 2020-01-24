@@ -3,11 +3,11 @@
 ! TO RUN
 ! ./test_training $NF_PATH/ExampleModels/simple_model.txt
 
-! read in some data
-! read in some network from .txt(?) file
-!   network will have been trained in keras
-! run data through network
-! check that result is same as in keras
+! load the simple_model
+! train on simple example
+!   run for 10 epochs
+!   print predictions, targets, and loss
+!   loss should decrease to verify backprop works
 
 program test_training
   use mod_kinds, only: ik, rk
@@ -17,6 +17,7 @@ program test_training
 
   type(network_type) :: net
 
+  integer :: n
   real(rk), allocatable :: result1(:), input(:), label(:), loss, d_loss(:)
   character(len=100), dimension(:), allocatable :: args
 
@@ -29,13 +30,13 @@ program test_training
   input = [10, 2, 3, 4, 5]
   label = [1, 2]
 
-  ! run test input through network
-  result1 = net % output(input)
-  print *, result1
+  do n = 1, 10
+    ! run test input through network
+    result1 = net % output(input)
+    loss = net % loss(result1, label)
 
-  loss = net % loss(result1, label)
-  print *, 'Loss: ', loss
-
-  d_loss = net % backprop(result1, label)
+    print *, n, 'Prediction:', result1, 'Truth:', label, 'Loss:', loss
+    d_loss = net % backprop(result1, label)
+  end do
 
 end program test_training

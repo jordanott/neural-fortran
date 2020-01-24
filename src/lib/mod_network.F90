@@ -20,6 +20,7 @@ module mod_network
   type :: network_type
     type(layer_container), allocatable :: layers(:)
     ! type(layer_type), allocatable :: layers(:)
+    real(rk) :: lr
     integer(ik) :: num_dense_layers, input_size, output_size
     real(rk), allocatable :: layer_info(:)
     character(len=100), allocatable :: layer_names(:)
@@ -87,6 +88,9 @@ contains
     integer(ik), allocatable :: dense_dims(:)
     integer(ik) :: n, i, dense_idx, unique_layers
     character(len=100), intent(in) :: layer_names(:)
+
+    ! default learning rate
+    self % lr = 0.001
 
     dense_idx = 0
     unique_layers = 0
@@ -181,24 +185,26 @@ contains
     ! read through the network description
     do n = 1, num_layers
       read(fileunit, fmt=*, IOSTAT=end_of_file) layer_names(n), layer_info(n)
-      print *, end_of_file
     end do
 
     ! initialize the network
     call self % init(layer_names, layer_info)
+
+    read(fileunit, fmt=*, IOSTAT=end_of_file) self % lr
 
     ! read biases into dense layer
     do n = 1, size(self % layers)
       select type (layer => self % layers(n) % p)
         class is (Dense)
           read(fileunit, fmt=*, IOSTAT=end_of_file) self % layers(n) % p % b
+
           if (end_of_file < 0) then
             exit
           end if
       end select
     end do
 
-    if (end_of_file > 0) then
+    if (end_of_file > -1) then
       ! read weights into dense layer
       do n = 1, size(self % layers)
         select type (layer => self % layers(n) % p)
@@ -267,15 +273,19 @@ contains
     class(network_type), intent(in out) :: self
     real(rk), intent(in) :: y_true(:), y_pred(:)
     real(rk), allocatable :: loss(:)
-    ! type(array2d), allocatable, intent(out) :: dw(:)
-    ! type(array1d), allocatable, intent(out) :: loss
-    integer :: n, nm
+    integer :: n
 
-    ! allocate(loss(size(y_true)))
-    print *, 'Calculating'
+    ! calculate loss
     loss = self % d_loss(y_true, y_pred)
 
-    print *, loss
+    n = size(self % layers)
+    call self % layers(n) % p % backward(loss, 0.5)
+
+    do n = size(self % layers) - 1, 1, -1
+      call self % layers(n) % p % backward(&
+        self % layers(n+1) % p % gradient,&
+        self % lr)
+    end do
 
   end function backprop
 

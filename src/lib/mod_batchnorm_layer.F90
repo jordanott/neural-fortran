@@ -61,10 +61,10 @@ contains
   end subroutine batchnorm_forward
 
 
-  subroutine batchnorm_backward(self, x)
+  subroutine batchnorm_backward(self, g, lr)
 
     class(BatchNorm), intent(in out) :: self
-    real(rk), intent(in) :: x(:)
+    real(rk), intent(in) :: g(:), lr
 
     ! TODO: implement backward pass
   end subroutine batchnorm_backward

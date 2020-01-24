@@ -93,18 +93,34 @@ contains
     class(Dense), intent(in out) :: self
     real(rk), intent(in) :: x(:)
 
+    self % i = x
+
     self % z = matmul(transpose(self % w), x) + self % b
     self % o = self % activation(self % z, self % alpha)
 
   end subroutine dense_forward
 
 
-  subroutine dense_backward(self, x)
+  subroutine dense_backward(self, g, lr)
 
     class(Dense), intent(in out) :: self
-    real(rk), intent(in) :: x(:)
+    real(rk), intent(in) :: g(:), lr
+    real(rk), allocatable :: t(:), dw(:,:), db(:)
 
-    ! TODO: implement backward pass
+    db = self % activation_prime(self % z, self % alpha) * g
+
+    dw = matmul(&
+      reshape(self % i, (/size(self % i), 1/)), &
+      reshape(db, (/1, size(db)/))&
+    )
+
+    db = self % activation_prime(self % z, self % alpha) * g
+    self % gradient = matmul(self % w, db)
+
+    ! weight updates
+    self % w = self % w - lr * dw
+    self % b = self % b - lr * db
+
   end subroutine dense_backward
 
 end module mod_dense_layer
