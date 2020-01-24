@@ -28,10 +28,11 @@ module mod_network
 
     procedure, public, pass(self) :: accuracy
     procedure, public, pass(self) :: backprop
-    procedure, public, pass(self) :: fwdprop
+    ! procedure, public, pass(self) :: fwdprop
     procedure, public, pass(self) :: init
     procedure, public, pass(self) :: load
     procedure, public, pass(self) :: loss
+    procedure, public, pass(self) :: d_loss
     procedure, public, pass(self) :: output
     procedure, public, pass(self) :: save
     ! procedure, public, pass(self) :: set_activation
@@ -78,53 +79,6 @@ contains
     end do
     accuracy = real(good) / size(x, dim=2)
   end function accuracy
-
-  pure subroutine backprop(self, y, dw, db)
-    ! Applies a backward propagation through the network
-    ! and returns the weight and bias gradients.
-    class(network_type), intent(in out) :: self
-    real(rk), intent(in) :: y(:)
-    type(array2d), allocatable, intent(out) :: dw(:)
-    type(array1d), allocatable, intent(out) :: db(:)
-    integer :: n, nm
-    ! TODO: update
-    ! associate(dims => self % dims, layers => self % layers)
-    !
-    !   call db_init(db, dims)
-    !   call dw_init(dw, dims)
-    !
-    !   n = size(dims)
-    !   db(n) % array = (layers(n) % a - y) * self % layers(n) % activation_prime(layers(n) % z)
-    !   dw(n-1) % array = matmul(reshape(layers(n-1) % a, [dims(n-1), 1]),&
-    !                            reshape(db(n) % array, [1, dims(n)]))
-    !
-    !   do n = size(dims) - 1, 2, -1
-    !     db(n) % array = matmul(layers(n) % w, db(n+1) % array)&
-    !                   * self % layers(n) % activation_prime(layers(n) % z)
-    !     dw(n-1) % array = matmul(reshape(layers(n-1) % a, [dims(n-1), 1]),&
-    !                              reshape(db(n) % array, [1, dims(n)]))
-    !   end do
-    !
-    ! end associate
-
-  end subroutine backprop
-
-  subroutine fwdprop(self, input)
-    ! Performs the forward propagation and stores arguments to activation
-    ! functions and activations themselves for use in backprop.
-    class(network_type), intent(in out) :: self
-    real(rk), intent(in) :: input(:)
-    integer(ik) :: n
-
-    ! forward through first layer
-    call self % layers(1) % p % forward(input)
-
-    ! iterate through rest of the layers
-    do n = 2, size(self % layers) - 1
-      call self % layers(n) % p % forward(self % layers(n-1) % p % o)
-    end do
-
-  end subroutine fwdprop
 
   subroutine init(self, layer_names, layer_info)
     ! Allocates and initializes the layers with given dimensions dims.
@@ -209,7 +163,7 @@ contains
 
   subroutine load(self, filename)
     ! Loads the network from file.
-    integer(ik) :: fileunit, n, num_layers
+    integer(ik) :: fileunit, n, num_layers, end_of_file
     real(rk), allocatable :: layer_info(:)
     character(len=*), intent(in) :: filename
     class(network_type), intent(in out) :: self
@@ -218,7 +172,7 @@ contains
     open(newunit=fileunit, file=filename, status='old', action='read')
 
     ! number of layers in network; this includes input and activations
-    read(fileunit, fmt=*) num_layers
+    read(fileunit, fmt=*, IOSTAT=end_of_file) num_layers
 
     ! allocate storage
     allocate(layer_names(num_layers))
@@ -226,7 +180,8 @@ contains
 
     ! read through the network description
     do n = 1, num_layers
-      read(fileunit, fmt=*) layer_names(n), layer_info(n)
+      read(fileunit, fmt=*, IOSTAT=end_of_file) layer_names(n), layer_info(n)
+      print *, end_of_file
     end do
 
     ! initialize the network
@@ -236,39 +191,53 @@ contains
     do n = 1, size(self % layers)
       select type (layer => self % layers(n) % p)
         class is (Dense)
-          read(fileunit, fmt=*) self % layers(n) % p % b
+          read(fileunit, fmt=*, IOSTAT=end_of_file) self % layers(n) % p % b
+          if (end_of_file < 0) then
+            exit
+          end if
       end select
     end do
 
-    ! read weights into dense layer
-    do n = 1, size(self % layers)
-      select type (layer => self % layers(n) % p)
-        class is (Dense)
-          read(fileunit, fmt=*) self % layers(n) % p % w
-      end select
-    end do
+    if (end_of_file > 0) then
+      ! read weights into dense layer
+      do n = 1, size(self % layers)
+        select type (layer => self % layers(n) % p)
+          class is (Dense)
+            read(fileunit, fmt=*) self % layers(n) % p % w
+        end select
+      end do
 
-    ! read batchnorm params into layer
-    do n = 1, size(self % layers)
-      select type (layer => self % layers(n) % p)
-        class is (BatchNorm)
-          read(fileunit, fmt=*) self % layers(n) % p % beta
-          read(fileunit, fmt=*) self % layers(n) % p % gama
-          read(fileunit, fmt=*) self % layers(n) % p % mean
-          read(fileunit, fmt=*) self % layers(n) % p % variance
-      end select
-    end do
+      ! read batchnorm params into layer
+      do n = 1, size(self % layers)
+        select type (layer => self % layers(n) % p)
+          class is (BatchNorm)
+            read(fileunit, fmt=*) self % layers(n) % p % beta
+            read(fileunit, fmt=*) self % layers(n) % p % gama
+            read(fileunit, fmt=*) self % layers(n) % p % mean
+            read(fileunit, fmt=*) self % layers(n) % p % variance
+        end select
+      end do
+    end if
 
     close(fileunit)
 
   end subroutine load
 
-  real(rk) function loss(self, x, y)
+  real(rk) function loss(self, y_true, y_pred)
     ! Given input x and expected output y, returns the loss of the network.
     class(network_type), intent(in out) :: self
-    real(rk), intent(in) :: x(:), y(:)
-    loss = 0.5 * sum((y - self % output(x))**2) / size(x)
+    real(rk), intent(in) :: y_true(:), y_pred(:)
+    loss = 0.5 * sum((y_true - y_pred)**2) / size(y_true)
   end function loss
+
+  function d_loss(self, y_true, y_pred) result(loss)
+    ! Given input x and expected output y, returns the loss of the network.
+    class(network_type), intent(in out) :: self
+    real(rk), intent(in) :: y_true(:), y_pred(:)
+    real(rk), allocatable :: loss(:)
+
+    loss = (y_true - y_pred) / size(y_true)
+  end function d_loss
 
   function output(self, input) result(a)
     ! Use forward propagation to compute the output of the network.
@@ -292,6 +261,23 @@ contains
 
   end function output
 
+  function backprop(self, y_true, y_pred) result(loss)
+    ! Applies a backward propagation through the network
+    ! and returns the weight and bias gradients.
+    class(network_type), intent(in out) :: self
+    real(rk), intent(in) :: y_true(:), y_pred(:)
+    real(rk), allocatable :: loss(:)
+    ! type(array2d), allocatable, intent(out) :: dw(:)
+    ! type(array1d), allocatable, intent(out) :: loss
+    integer :: n, nm
+
+    ! allocate(loss(size(y_true)))
+    print *, 'Calculating'
+    loss = self % d_loss(y_true, y_pred)
+
+    print *, loss
+
+  end function backprop
 
   subroutine save(self, filename)
     ! Saves the network to a file.
@@ -403,8 +389,8 @@ contains
     real(rk), intent(in) :: x(:), y(:), eta
     type(array2d), allocatable :: dw(:)
     type(array1d), allocatable :: db(:)
-    call self % fwdprop(x)
-    call self % backprop(y, dw, db)
+    ! call self % fwdprop(x)
+    ! call self % backprop(y, dw, db)
     call self % update(dw, db, eta)
   end subroutine train_single
 

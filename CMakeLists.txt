@@ -86,7 +86,7 @@ string(REGEX REPLACE "^ | $" "" LIBS "${LIBS}")
 # tests
 enable_testing()
 #  mnist network_save network_sync set_activation_function
-foreach(execid keras bulk ensembles)
+foreach(execid keras bulk ensembles training)
   add_executable(test_${execid} src/tests/test_${execid}.F90)
   target_link_libraries(test_${execid} neural ${LIBS})
   add_test(test_${execid} bin/test_${execid})
