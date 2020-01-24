@@ -37,7 +37,7 @@ contains
 
     ensemble % total_members = 128
 
-    call ensemble % model % load('./keras_matrices/model.txt')
+    call ensemble % model % load(directory) 
   end function ensemble_constructor
 
 
