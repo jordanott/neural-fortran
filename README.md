@@ -13,6 +13,9 @@ I've beefed up the generalizability and added many features
     * Simply extend the `layer_type` and specify these functions:
       * `forward`
       * `backward`
+* Training
+  * Backprop takes place inside the extended `layer_type`
+  * Ability to training arbitrary cost functions
 * Implemented layers
   * Dense
   * Dropout
@@ -20,29 +23,15 @@ I've beefed up the generalizability and added many features
 * Ensembles
   * Read in a directory of network configs
   * Create a network for each config
-  * Run in parallel using `$OMP PARALLEL` directives 
+  * Run in parallel using `$OMP PARALLEL` directives
   * Average results of all predictions in ensemble
 * A bridge between Keras and Fortran
   * Convert model trained in Keras (`h5` file) to Neural Fortran
-    * Any of the above layers are allowed 
+    * Any of the above layers are allowed
     * Sequential or Functional API
   * Convert Neural Fortran model back to Keras
 
 ---
-## neural-fortran
-
-* [Getting started](https://github.com/jordanott/neural-fortran#getting-started)
-  - [Building in serial mode](https://github.com/jordanott/neural-fortran#building-in-serial-mode)
-  - [Building in parallel mode](https://github.com/jordanott/neural-fortran#building-in-parallel-mode)
-  - [Building with a different compiler](https://github.com/jordanott/neural-fortran#building-with-a-different-compiler)
-  - [Building with BLAS or MKL](https://github.com/jordanott/neural-fortran#building-with-blas-or-mkl)
-  - [Building in double or quad precision](https://github.com/jordanott/neural-fortran#building-in-double-or-quad-precision)
-  - [Building in debug mode](https://github.com/jordanott/neural-fortran#building-in-debug-mode)
-* [Examples](https://github.com/jordanott/neural-fortran#examples)
-  - [Creating a network](https://github.com/jordanott/neural-fortran#creating-a-network)
-  - [Training the network](https://github.com/jordanott/neural-fortran#training-the-network)
-  - [Saving and loading from file](https://github.com/jordanott/neural-fortran#saving-and-loading-from-file)
-
 
 ## Getting started
 
@@ -58,17 +47,84 @@ Dependencies:
 * OpenCoarrays (optional, for parallel execution, gfortran only)
 * BLAS, MKL (optional)
 
-### Building in serial mode
+### Build
+* Tests and examples will be built in the `bin/` directory
+* To use a different compiler modify `FC=mpif90 cmake .. -DSERIAL=1`
 
 ```
-cd neural-fortran
-mkdir build
-cd build
-cmake .. -DSERIAL=1
-make
+sh build_steps.sh
 ```
 
-Tests and examples will be built in the `bin/` directory.
+## Examples
+
+### Loading a model trained in Keras
+
+```
+python convert_weights.py --weights_file path/to/keras_model.h5 --output_file path/to/model_config.txt
+```
+
+This would create the `model_config.txt` file with the following:
+```
+9                          --> How many total layers (includes input and activations)
+input	5                 --> 5 inputs
+dense	3                 --> Hidden layer 1 has 3 nodes
+leakyrelu	0.3           --> Hidden layer 1 activation LeakyReLU with alpha = 0.3
+dense	4                 --> Hidden layer 2 has 4 nodes
+leakyrelu	0.3           --> Hidden layer 2 activation LeakyReLU with alpha = 0.3
+dense	3                 --> Hidden layer 3 has 3 nodes
+leakyrelu	0.3           --> Hidden layer 3 activation LeakyReLU with alpha = 0.3
+dense	2                 --> 2 outputs in the last layer
+linear	0                --> Linear activation with no alpha
+0.5                        --> Learning rate
+<BIASES>
+.
+.
+.
+<DENSE LAYER WEIGHTS>
+.
+.
+.
+<BATCH NORMALIZATION PARAMETERS>
+```
+
+### Creating a network
+
+Architecture descriptions are specified in a config text file:
+```
+9                          --> How many total layers (includes input and activations)
+input	5                 --> 5 inputs
+dense	3                 --> Hidden layer 1 has 3 nodes
+leakyrelu	0.3           --> Hidden layer 1 activation LeakyReLU with alpha = 0.3
+dense	4                 --> Hidden layer 2 has 4 nodes
+leakyrelu	0.3           --> Hidden layer 2 activation LeakyReLU with alpha = 0.3
+dense	3                 --> Hidden layer 3 has 3 nodes
+leakyrelu	0.3           --> Hidden layer 3 activation LeakyReLU with alpha = 0.3
+dense	2                 --> 2 outputs in the last layer
+linear	0                --> Linear activation with no alpha
+0.5                        --> Learning rate
+```
+
+Then the network configuration can be loaded into FORTRAN:
+```fortran
+use mod_network, only: network_type
+type(network_type) :: net
+
+call net % load('model_config.txt')
+```
+
+### Saving and loading from file
+
+To save a network to a file, do:
+
+```fortran
+call net % save('model_config.txt')
+```
+
+Loading from file works the same way:
+
+```fortran
+call net % load('model_config.txt')
+```
 
 ### Building in parallel mode
 
@@ -128,74 +184,3 @@ To build with debugging flags enabled, type:
 ```
 cmake .. -DCMAKE_BUILD_TYPE=debug
 ```
-
-## Examples
-
-### Creating a network
-
-Creating a network with 3 layers,
-one input, one hidden, and one output layer,
-with 3, 5, and 2 neurons each:
-
-```fortran
-use mod_network, only: network_type
-type(network_type) :: net
-net = network_type([3, 5, 2])
-```
-
-### Setting the activation function
-
-By default, the network will be initialized with the sigmoid activation
-function for all layers. You can specify a different activation function:
-
-```fortran
-net = network_type([3, 5, 2], activation='tanh')
-```
-
-or set it after the fact:
-
-```fortran
-net = network_type([3, 5, 2])
-call net % set_activation('tanh')
-```
-
-It's possible to set different activation functions for each layer.
-For example, this snippet will create a network with a Gaussian
-activation functions for all layers except the output layer,
-and a RELU function for the output layer:
-
-```fortran
-net = network_type([3, 5, 2], activation='gaussian')
-call net % layers(3) % set_activation('relu')
-```
-
-Available activation function options are: `gaussian`, `relu`, `sigmoid`,
-`step`, and `tanh`.
-See [mod_activation.f90](https://github.com/jordanott/neural-fortran/blob/master/src/lib/mod_activation.F90)
-for specifics.
-
-### Saving and loading from file
-
-To save a network to a file, do:
-
-```fortran
-call net % save('my_net.txt')
-```
-
-Loading from file works the same way:
-
-```fortran
-call net % load('my_net.txt')
-```
-
-### Synchronizing networks in parallel mode
-
-When running in parallel mode, you may need to synchronize the weights
-and biases between images. You can do it like this:
-
-```fortran
-call net % sync(1)
-```
-
-The argument to `net % sync()` refers to the source image from which to
-broadcast. It can be any positive number not greater than `num_images()`.
