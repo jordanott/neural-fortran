@@ -7,6 +7,7 @@ import numpy as np
 import numpy as np
 import math
 import keras
+import keras.backend as K
 from keras.models import Sequential, Model
 from keras.layers import Dense, Dropout, BatchNormalization
 from keras.layers import Input, Activation
@@ -26,17 +27,7 @@ def txt_to_h5(weights_file_name, output_file_name=''):
         output_file_name  (str): desired output path for the produced h5 file
     '''
 
-    # TODO:
-    # parse txt file following convention in
-    #       https://github.com/jordanott/neural-fortran/blob/development/KerasWeightsProcessing/README.md
-    # create keras model with each of desired layers
-    # manually load:
-    #       - weights
-    #       - biases
-    #       - batchnorm params
-    #           - see order of those params in README
-    #
-
+    lr               = False
     bias             = []                                       # dense layer
     weights          = []                                       # dense layer
     batchnorm_params = []                                       # batchnormalization layers
@@ -84,6 +75,9 @@ def txt_to_h5(weights_file_name, output_file_name=''):
                     x = Activation('linear')(x)
 
             elif not layer_type.isalpha():
+                if lr == False:
+                    lr = float(line[0]); continue
+                    
                 # found bias or weights numbers
                 w = np.asarray([float(num) for num in line])
 
@@ -105,7 +99,7 @@ def txt_to_h5(weights_file_name, output_file_name=''):
 
     # compile model
     model.compile(loss='mse',
-                  optimizer='sgd',
+                  optimizer=optimizers.SGD(lr),
                   metrics=['accuracy'])
 
 
@@ -155,6 +149,14 @@ def h5_to_txt(weights_file_name, output_file_name=''):
         # weights of model
         model_weights = weights_file['model_weights']
         keras_version = weights_file.attrs['keras_version']
+
+        training_config = weights_file.attrs['training_config'].decode('utf-8')
+        training_config = training_config.replace('true','True')
+        training_config = training_config.replace('false','False')
+        training_config = training_config.replace('null','None')
+        training_config = eval(training_config)
+
+        learning_rate   = training_config['optimizer_config']['config']['learning_rate']
 
         # Decode using the utf-8 encoding; change values for eval
         model_config = weights_file.attrs['model_config'].decode('utf-8')
@@ -261,6 +263,10 @@ def h5_to_txt(weights_file_name, output_file_name=''):
 
         output_file.write(
             ''.join(layer_info)
+        )
+
+        output_file.write(
+            str(learning_rate) + '\n'
         )
 
         for b in bias:
