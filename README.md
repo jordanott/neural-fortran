@@ -65,17 +65,17 @@ python convert_weights.py --weights_file path/to/keras_model.h5 --output_file pa
 
 This would create the `model_config.txt` file with the following:
 ```
-9                          --> How many total layers (includes input and activations)
+9                         --> How many total layers (includes input and activations)
 input	5                 --> 5 inputs
 dense	3                 --> Hidden layer 1 has 3 nodes
-leakyrelu	0.3           --> Hidden layer 1 activation LeakyReLU with alpha = 0.3
+leakyrelu	0.3       --> Hidden layer 1 activation LeakyReLU with alpha = 0.3
 dense	4                 --> Hidden layer 2 has 4 nodes
-leakyrelu	0.3           --> Hidden layer 2 activation LeakyReLU with alpha = 0.3
+leakyrelu	0.3       --> Hidden layer 2 activation LeakyReLU with alpha = 0.3
 dense	3                 --> Hidden layer 3 has 3 nodes
-leakyrelu	0.3           --> Hidden layer 3 activation LeakyReLU with alpha = 0.3
+leakyrelu	0.3       --> Hidden layer 3 activation LeakyReLU with alpha = 0.3
 dense	2                 --> 2 outputs in the last layer
-linear	0                --> Linear activation with no alpha
-0.5                        --> Learning rate
+linear	0                 --> Linear activation with no alpha
+0.5                       --> Learning rate
 <BIASES>
 .
 .
@@ -91,17 +91,17 @@ linear	0                --> Linear activation with no alpha
 
 Architecture descriptions are specified in a config text file:
 ```
-9                          --> How many total layers (includes input and activations)
+9                         --> How many total layers (includes input and activations)
 input	5                 --> 5 inputs
 dense	3                 --> Hidden layer 1 has 3 nodes
-leakyrelu	0.3           --> Hidden layer 1 activation LeakyReLU with alpha = 0.3
+leakyrelu	0.3       --> Hidden layer 1 activation LeakyReLU with alpha = 0.3
 dense	4                 --> Hidden layer 2 has 4 nodes
-leakyrelu	0.3           --> Hidden layer 2 activation LeakyReLU with alpha = 0.3
+leakyrelu	0.3       --> Hidden layer 2 activation LeakyReLU with alpha = 0.3
 dense	3                 --> Hidden layer 3 has 3 nodes
-leakyrelu	0.3           --> Hidden layer 3 activation LeakyReLU with alpha = 0.3
+leakyrelu	0.3       --> Hidden layer 3 activation LeakyReLU with alpha = 0.3
 dense	2                 --> 2 outputs in the last layer
-linear	0                --> Linear activation with no alpha
-0.5                        --> Learning rate
+linear	0                 --> Linear activation with no alpha
+0.5                       --> Learning rate
 ```
 
 Then the network configuration can be loaded into FORTRAN:
