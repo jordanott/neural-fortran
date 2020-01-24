@@ -57,10 +57,10 @@ contains
   end subroutine dense_forward
 
 
-  subroutine dense_backward(self, x)
+  subroutine dense_backward(self, g, lr)
 
     class(Dropout), intent(in out) :: self
-    real(rk), intent(in) :: x(:)
+    real(rk), intent(in) :: g(:), lr
 
     ! TODO: implement backward pass
   end subroutine dense_backward

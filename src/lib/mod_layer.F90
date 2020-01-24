@@ -10,11 +10,13 @@ module mod_layer
   ! define layer type to be extended
   type :: layer_type
 
-    logical :: training             ! is the network in training mode
-    real(rk), allocatable :: b(:)   ! biases
-    real(rk), allocatable :: o(:)   ! output
-    real(rk), allocatable :: w(:,:) ! weights
-    real(rk), allocatable :: z(:)   ! arg. to activation function
+    logical :: training                    ! is the network in training mode
+    real(rk), allocatable :: i(:)          ! store layer input
+    real(rk), allocatable :: b(:)          ! biases
+    real(rk), allocatable :: o(:)          ! output
+    real(rk), allocatable :: gradient(:)   ! gradients
+    real(rk), allocatable :: w(:,:)        ! weights
+    real(rk), allocatable :: z(:)          ! arg. to activation function
     real(rk), allocatable :: beta(:)
     real(rk), allocatable :: gama(:)
     real(rk), allocatable :: mean(:)
@@ -55,10 +57,10 @@ contains
   end subroutine layer_forward
 
 
-  subroutine layer_backward(self, x)
+  subroutine layer_backward(self, g, lr)
 
     class(layer_type), intent(in out) :: self
-    real(rk), intent(in) :: x(:)
+    real(rk), intent(in) :: g(:), lr
 
     ! Do stuff for backward pass
   end subroutine layer_backward

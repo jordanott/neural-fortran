@@ -3,11 +3,10 @@
 ! TO RUN
 ! ./test_keras $NF_PATH/ExampleModels/simple_model.txt
 
-! read in some data
-! read in some network from .txt(?) file
-!   network will have been trained in keras
-! run data through network
-! check that result is same as in keras
+! this file is used in $NF_PATH/KerasWeightsProcessing/examples/test_network.py
+! load a specified network from cmd line arg
+! pass simple input through it
+! print result
 
 program test_keras
   use mod_kinds, only: ik, rk
@@ -26,7 +25,7 @@ program test_keras
   ! load trained network from keras
   call net % load(args(1))
 
-  input = [10, 2, 3, 4, 5]
+  input = [1, 2, 3, 4, 5]
 
   ! run test input through network
   result1 = net % output(input)
