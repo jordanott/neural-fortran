@@ -1,6 +1,6 @@
 # Keras integration with Neural Fortran
 
-
+![](https://github.com/jordanott/neural-fortran/blob/master/Figures/logo.png?raw=true)
 
 This library is derived from [Milan Curcic's](https://github.com/jordanott/neural-fortran) original work  
 I've beefed up the generalizability and added many features
