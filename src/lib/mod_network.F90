@@ -190,7 +190,7 @@ contains
     ! initialize the network
     call self % init(layer_names, layer_info)
 
-    read(fileunit, fmt=*, IOSTAT=end_of_file) self % lr
+    ! read(fileunit, fmt=*, IOSTAT=end_of_file) self % lr
 
     ! read biases into dense layer
     do n = 1, size(self % layers)
@@ -279,7 +279,7 @@ contains
     loss = self % d_loss(y_true, y_pred)
 
     n = size(self % layers)
-    call self % layers(n) % p % backward(loss, 0.5)
+    call self % layers(n) % p % backward(loss, self % lr)
 
     do n = size(self % layers) - 1, 1, -1
       call self % layers(n) % p % backward(&
