@@ -112,6 +112,15 @@ type(network_type) :: net
 call net % load('model_config.txt')
 ```
 
+
+### Ensembles
+[mod_ensemble](https://github.com/jordanott/neural-fortran/blob/master/src/lib/mod_ensemble.F90) allows ensembles of neural networks to be run in parallel. The `ensemble_type` will read all networks provided in the user specified directory. Calling `average` passes the input through all networks in the ensemble and averages their output. `noise_perturbation` is used to perturb the input to each model with Gaussian noise.
+```
+ensemble = ensemble_type('path/to/models/', noise_perturbation)
+
+result1 = ensemble % average(input)
+```
+
 ### Saving and loading from file
 
 To save a network to a file, do:
