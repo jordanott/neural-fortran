@@ -100,7 +100,7 @@ contains
     allocate(output(output_size))
     allocate(model_output(output_size))
 
-    !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,output,input)
+    !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,output)
     do i=1, self % total_members
       ! just to check we're using multiple threads
       ! print *, OMP_GET_THREAD_NUM(), i
