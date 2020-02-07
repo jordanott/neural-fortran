@@ -100,14 +100,14 @@ contains
     allocate(output(output_size))
     allocate(model_output(output_size))
 
-    !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,output)
+    !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,output,input)
     do i=1, self % total_members
       ! just to check we're using multiple threads
       ! print *, OMP_GET_THREAD_NUM(), i
 
       ! output from model - noise added to input
       model_output = self % ensemble_members(i) % p % output(&
-        randn(input_size)* self % noise&
+        input + self % noise&
       )
 
       ! write model output into shared memory
