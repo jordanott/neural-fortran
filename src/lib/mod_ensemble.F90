@@ -107,7 +107,7 @@ contains
 
       ! output from model - noise added to input
       model_output = self % ensemble_members(i) % p % output(&
-        input + self % noise&
+        input + randn(input_size) * self % noise&
       )
 
       ! write model output into shared memory
