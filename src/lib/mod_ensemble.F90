@@ -35,53 +35,55 @@ contains
   !
   type(ensemble_type) function ensemble_constructor(directory, noise) result(ensemble)
     ! creates a network for every config txt in the directory
-    real :: r
-    integer :: i,n,reason, idx
+    integer(ik) :: i,n, idx, fileunit, end_of_file, num_lines
     real(rk), intent(in) :: noise
     character(len=*), intent(in) :: directory
-    character(LEN=100), dimension(:), allocatable :: model_file_names
+    character(LEN=100), dimension(128) :: model_file_names
     type(network_type) :: net
 
-    ! get the files
-    call system('ls '//directory//' > ensemble_members.txt')
-    open(31,FILE='ensemble_members.txt',action="read")
-
+    num_lines = 0
     ! set standard deviation for noise perturbation
     ensemble % noise = noise
-    ! count how many files in directory
-    ensemble % num_members = 0
+   
+    open(newunit=fileunit, file='ensemble_members.txt', status='old', action='read')
+
     do
-      read(31,FMT='(a)',iostat=reason) r
-      if (reason/=0) EXIT
-      ensemble % num_members = ensemble % num_members + 1
+      read(fileunit, fmt=*, iostat=end_of_file) model_file_names(num_lines+1)
+      if (end_of_file/=0) EXIT
+      num_lines = num_lines + 1
     end do
+
+    close(fileunit)
+
+    ensemble % num_members = num_lines
+    print *, 'Number of members:', ensemble % num_members
 
     ensemble % num_of_each = int(128 / ensemble % num_members)
     ensemble % total_members = ensemble % num_members * ensemble % num_of_each
 
     ! allocate how many members in the ensemble
     allocate(ensemble % ensemble_members(ensemble % total_members))
-    allocate(model_file_names(ensemble % total_members))
-    rewind(31)
 
+    print *, 'loading models'
     do i = 1,ensemble % num_members
-      read(31,'(a)') model_file_names(i)
-
+      print *, trim(directory)//trim(model_file_names(i))
       ! construct model using the config file
       call net % load(trim(directory)//trim(model_file_names(i)))
 
+      print *, 'Loaded into network: ', trim(directory)//trim(model_file_names(i))
+ 
       do n = 1, ensemble % num_of_each
         idx = (i - 1) * ensemble % num_of_each + n
-
+        print *, 'Allocating ', trim(directory)//trim(model_file_names(i)), idx
         allocate(&
           ensemble % ensemble_members(idx) % p,&
           source=net&
         )
+       	print *, 'Allocated ', trim(directory)//trim(model_file_names(i)), idx
       end do
     end do
-
-    close(31)
-
+    
+    print *, 'End of constructor'
   end function ensemble_constructor
 
 
@@ -91,7 +93,8 @@ contains
     real(rk), intent(in) :: input(:)
     real(rk), allocatable :: storage(:,:), model_output(:), output(:)
     integer(ik) :: i,j,idx, output_size, input_size
-
+    
+    print *, 'Starting to average'
     ! getting output size from model
     input_size  = self % ensemble_members(1) % p % input_size
     output_size = self % ensemble_members(1) % p % output_size
@@ -100,10 +103,11 @@ contains
     allocate(output(output_size))
     allocate(model_output(output_size))
 
+    print *, 'About to enter parallel'
     !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i,j,output)
     do i=1, self % total_members
       ! just to check we're using multiple threads
-      ! print *, OMP_GET_THREAD_NUM(), i
+      print *, OMP_GET_THREAD_NUM(), i
 
       ! output from model - noise added to input
       model_output = self % ensemble_members(i) % p % output(&
@@ -118,6 +122,7 @@ contains
     end do
     !$OMP END PARALLEL DO
 
+    print *, 'End average'
     ! average over all model predictions
     output = sum(storage, DIM=2) / self % total_members
 
